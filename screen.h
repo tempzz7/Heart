@@ -58,8 +58,7 @@
 */
 typedef enum {BLACK, RED, GREEN, BROWN, BLUE, MAGENTA, CYAN, LIGHTGRAY,
         DARKGRAY, LIGHTRED, LIGHTGREEN, YELLOW, LIGHTBLUE, 
-        LIGHTMAGENTA, LIGHTCYAN, WHITE} screenColor; 
-
+        LIGHTMAGENTA, LIGHTCYAN, WHITE, DARK_PURPLE, WINE_RED} screenColor;  // Adicionado DARK_PURPLE e WINE_RED
 
 
 /**
@@ -168,7 +167,6 @@ void screenDestroy();
  * @param x x position
  * @param y y position
  */ 
-
 void screenGotoxy(int x, int y);
 
 /**
