@@ -11,7 +11,7 @@
 void keyboardInit();
 
 void keyboardDestroy();
-    
+
 int keyhit();
 
 int readch();
