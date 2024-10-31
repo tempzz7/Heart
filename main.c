@@ -16,6 +16,7 @@ int coracaoX = AREA_INICIO_X + 3;
 int coracaoY = AREA_FIM_Y - 2;
 int health = 200;
 int bossAtaqueCooldown = 0;
+int score = 0;
 
 typedef struct {
     int x, y;
@@ -262,9 +263,10 @@ void desenharAreaComCoracao() {
 void atualizarStatus() {
     screenSetColor(RED, BLACK);
     screenGotoxy(AREA_INICIO_X, AREA_FIM_Y + 2);
-    printf("HP: %d  ", health);
+    printf("HP: %d", health);
+    screenGotoxy(AREA_FIM_X - 10, AREA_FIM_Y + 2);  // Posiciona a pontuação no canto direito
+    printf("Score: %d", score);
 }
-
 void desenharOssos() {
     screenSetColor(WHITE, DARKGRAY);
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
@@ -352,6 +354,7 @@ void iniciarJogo() {
     health = 200;
     coracaoX = AREA_INICIO_X + 3;
     coracaoY = AREA_FIM_Y - 2;
+    score = 0;  // Resetar a pontuação ao iniciar o jogo
 
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
         ossos[i].active = 0;
@@ -387,6 +390,8 @@ void iniciarJogo() {
         limparAreaJogo();
         desenharAreaComCoracao();
         screenUpdate();
+
+        score++;  // Incrementa a pontuação a cada ciclo do jogo
 
         usleep(30000);
     }
