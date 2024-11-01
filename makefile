@@ -1,14 +1,12 @@
-
 CC = gcc
-CFLAGS = -Wall -g
-
+CFLAGS = -Wall -g `sdl2-config --cflags`
+LDFLAGS = `sdl2-config --libs` -lSDL2_mixer
 SRC = main.c screen.c keyboard.c timer.c
 OBJ = main.o screen.o keyboard.o timer.o
-
 TARGET = heart_program
 
 $(TARGET): $(OBJ)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJ)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJ) $(LDFLAGS)
 
 main.o: main.c
 	$(CC) $(CFLAGS) -c main.c

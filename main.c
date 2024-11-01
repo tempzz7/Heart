@@ -4,6 +4,8 @@
 #include "screen.h"
 #include "keyboard.h"
 #include "timer.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
 
 #define AREA_INICIO_X 10
 #define AREA_FIM_X 70
@@ -43,7 +45,7 @@ void mostrarCreditos();
 void desenharAreaComCoracao();
 void desenharOssos();
 void atualizarOssos();
-void iniciarJogo();
+void iniciarJogo(Mix_Music *bgMusic);
 void moverCoracao(int upPressed, int downPressed, int leftPressed, int rightPressed);
 void gerarObstaculos();
 int detectarColisao();
@@ -350,7 +352,7 @@ void limparAreaJogo() {
     }
 }
 
-void iniciarJogo() {
+void iniciarJogo(Mix_Music *bgMusic) {
     health = 200;
     coracaoX = AREA_INICIO_X + 3;
     coracaoY = AREA_FIM_Y - 2;
@@ -397,21 +399,43 @@ void iniciarJogo() {
     }
 
     if (health <= 0) {
+        // Para a música ao finalizar o jogo e libera a memória
+        Mix_HaltMusic();
+        Mix_FreeMusic(bgMusic);
+
         screenSetColor(RED, BLACK);
         screenClear();
         screenGotoxy(AREA_INICIO_X + 10, (AREA_INICIO_Y + AREA_FIM_Y) / 2);
-        printf("Game Over!");
+        printf("\n\n");
+        printf("*****************************************************\n");
+        printf("*                                                   *\n");
+        printf("*               A ultima centelha se apagou.        *\n");
+        printf("*                                                   *\n");
+        printf("*      A alma se perdeu no vazio... mas talvez      *\n");
+        printf("*        ainda haja esperança em um novo começo.    *\n");
+        printf("*                                                   *\n");
+        printf("*****************************************************\n");
+        printf("\n\n");
         screenUpdate();
-        sleep(2);
+        sleep(20);
     }
 }
 
 int main() {
     int ch = 0;
-
     screenInit(1);
     keyboardInit();
     timerInit(50);
+
+    // Inicializa SDL2 para áudio
+    if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+        fprintf(stderr, "Erro ao inicializar SDL: %s\n", SDL_GetError());
+        return 1;
+    }
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        fprintf(stderr, "Erro ao inicializar SDL_mixer: %s\n", Mix_GetError());
+        return 1;
+    }
 
     mostrarMenuPrincipal();
     screenUpdate();
@@ -420,9 +444,18 @@ int main() {
         if (keyhit()) {
             ch = readch();
             if (ch == '1') {
+                // Carrega a música e toca em loop ao iniciar o jogo
+                Mix_Music *bgMusic = Mix_LoadMUS("background_music.mp3");
+                if (!bgMusic) {
+                    fprintf(stderr, "Erro ao carregar música: %s\n", Mix_GetError());
+                    return 1;
+                }
+                Mix_PlayMusic(bgMusic, -1);
+
                 screenClear();
                 desenharPersonagemASCII();
-                iniciarJogo();
+                iniciarJogo(bgMusic);
+
                 mostrarMenuPrincipal();
             } else if (ch == '2') {
                 mostrarCreditos();
@@ -434,16 +467,14 @@ int main() {
             }
             screenUpdate();
         }
-
-        if (timerTimeOver() == 1) {
-            animarCoracao();
-            screenUpdate();
-        }
     }
+
+    // Fecha SDL2_mixer
+    Mix_CloseAudio();
+    SDL_Quit();
 
     keyboardDestroy();
     screenDestroy();
     timerDestroy();
-
     return 0;
 }
