@@ -405,22 +405,30 @@ void iniciarJogo(Mix_Music *bgMusic) {
 
         screenSetColor(RED, BLACK);
         screenClear();
-        screenGotoxy(AREA_INICIO_X + 10, (AREA_INICIO_Y + AREA_FIM_Y) / 2);
-        printf("\n\n");
-        printf("*****************************************************\n");
-        printf("*                                                   *\n");
-        printf("*               A ultima centelha se apagou.        *\n");
-        printf("*                                                   *\n");
-        printf("*      A alma se perdeu no vazio... mas talvez      *\n");
-        printf("*        ainda haja esperança em um novo começo.    *\n");
-        printf("*                                                   *\n");
-        printf("*****************************************************\n");
-        printf("\n\n");
+        
+        const char *gameOverMessage[] = {
+            "*****************************************************",
+            "*                                                   *",
+            "*               A ultima centelha se apagou.        *",
+            "*                                                   *",
+            "*      A alma se perdeu no vazio... mas talvez      *",
+            "*        ainda haja esperança em um novo começo.    *",
+            "*                                                   *",
+            "*****************************************************"
+        };
+        int messageLines = sizeof(gameOverMessage) / sizeof(gameOverMessage[0]);
+        int startY = (MAXY - messageLines) / 2;
+        int startX = (MAXX - strlen(gameOverMessage[0])) / 2;
+
+        for (int i = 0; i < messageLines; i++) {
+            screenGotoxy(startX, startY + i);
+            printf("%s", gameOverMessage[i]);
+        }
+
         screenUpdate();
         sleep(20);
     }
 }
-
 int main() {
     int ch = 0;
     screenInit(1);
