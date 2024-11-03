@@ -1,11 +1,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
 #include "screen.h"
 #include "keyboard.h"
 #include "timer.h"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_mixer.h>
 
 #define AREA_INICIO_X 10
 #define AREA_FIM_X 70
@@ -20,6 +21,7 @@ int health = 200;
 int bossAtaqueCooldown = 0;
 int score = 0;
 
+// Estruturas para obstáculos e projéteis
 typedef struct {
     int x, y;
     int active;
@@ -38,7 +40,7 @@ ObstaculoOsso ossos[MAX_OBSTACULOS];
 Projeteis projeteis[MAX_PROJETEIS];
 int contadorObstaculos = 0;
 
-// Declaração antecipada das funções
+// Declarações de funções
 void animarCoracao();
 void mostrarMenuPrincipal();
 void mostrarCreditos();
@@ -46,6 +48,7 @@ void desenharAreaComCoracao();
 void desenharOssos();
 void atualizarOssos();
 void iniciarJogo(Mix_Music *bgMusic);
+void finalizarJogo(int pontuacaoAtual);
 void moverCoracao(int upPressed, int downPressed, int leftPressed, int rightPressed);
 void gerarObstaculos();
 int detectarColisao();
@@ -55,6 +58,37 @@ void limparAreaJogo();
 void bossAtirar();
 void atualizarProjeteis();
 int detectarColisaoProjeteis();
+
+// Função para ler a maior pontuação do arquivo
+int lerMaiorPontuacao() {
+    int maiorPontuacao = 0;
+    FILE *file = fopen("score.dat", "r");
+    if (file != NULL) {
+        fscanf(file, "%d", &maiorPontuacao);
+        fclose(file);
+    }
+    return maiorPontuacao;
+}
+
+// Função para salvar a maior pontuação no arquivo
+void salvarMaiorPontuacao(int pontuacaoAtual) {
+    int maiorPontuacao = lerMaiorPontuacao();
+    if (pontuacaoAtual > maiorPontuacao) {
+        FILE *file = fopen("score.dat", "w");
+        if (file != NULL) {
+            fprintf(file, "%d", pontuacaoAtual);
+            fclose(file);
+        }
+    }
+}
+
+// Função para exibir a maior pontuação na tela inicial
+void mostrarMaiorPontuacao() {
+    int maiorPontuacao = lerMaiorPontuacao();
+    screenSetColor(LIGHTMAGENTA, DARKGRAY);
+    screenGotoxy(33, 26); // Ajuste para exibir abaixo das opções do menu
+    printf("Maior Pontuação: %d", maiorPontuacao);
+}
 
 void mostrarMenuPrincipal() {
     screenSetColor(RED, DARKGRAY);
@@ -87,6 +121,8 @@ void mostrarMenuPrincipal() {
     printf("2. Créditos");
     screenGotoxy(33, 24);
     printf("3. Sair");
+    screenGotoxy(33, 25); // Ajuste da posição para que o texto de maior pontuação não sobreponha as opções.
+    mostrarMaiorPontuacao();
 }
 
 void mostrarCreditos() {
@@ -220,7 +256,6 @@ void atualizarProjeteis() {
     }
 }
 
-
 int detectarColisaoProjeteis() {
     for (int i = 0; i < MAX_PROJETEIS; i++) {
         if (projeteis[i].active && projeteis[i].x == coracaoX && projeteis[i].y == coracaoY) {
@@ -269,6 +304,7 @@ void atualizarStatus() {
     screenGotoxy(AREA_FIM_X - 10, AREA_FIM_Y + 2);  // Posiciona a pontuação no canto direito
     printf("Score: %d", score);
 }
+
 void desenharOssos() {
     screenSetColor(WHITE, DARKGRAY);
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
@@ -307,9 +343,6 @@ void moverCoracao(int upPressed, int downPressed, int leftPressed, int rightPres
     }
     if (detectarColisao() || detectarColisaoProjeteis()) {
         health -= 20;
-        if (health <= 0) {
-            jogoEmExecucao = 0;
-        }
     }
 }
 
@@ -356,8 +389,7 @@ void iniciarJogo(Mix_Music *bgMusic) {
     health = 200;
     coracaoX = AREA_INICIO_X + 3;
     coracaoY = AREA_FIM_Y - 2;
-    score = 0;  // Resetar a pontuação ao iniciar o jogo
-
+    score = 0; // Redefinir a pontuação ao iniciar o jogo
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
         ossos[i].active = 0;
     }
@@ -365,13 +397,11 @@ void iniciarJogo(Mix_Music *bgMusic) {
         projeteis[i].active = 0;
     }
     contadorObstaculos = 0;
-
+    int jogando = 1;
     screenClear();
     desenharPersonagemASCII();
-
-    while (jogoEmExecucao && health > 0) {
+    while (jogando && health > 0) {
         int upPressed = 0, downPressed = 0, leftPressed = 0, rightPressed = 0;
-
         if (keyhit()) {
             int tecla = readch();
             if (tecla == 'w' || tecla == 'W') upPressed = 1;
@@ -379,56 +409,52 @@ void iniciarJogo(Mix_Music *bgMusic) {
             if (tecla == 'a' || tecla == 'A') leftPressed = 1;
             if (tecla == 'd' || tecla == 'D') rightPressed = 1;
             if (tecla == 'q' || tecla == 'Q') {
-                jogoEmExecucao = 0;
+                jogando = 0;
                 break;
             }
         }
-
         moverCoracao(upPressed, downPressed, leftPressed, rightPressed);
         atualizarOssos();
         gerarObstaculos();
         bossAtirar();
-
         limparAreaJogo();
         desenharAreaComCoracao();
         screenUpdate();
-
-        score++;  // Incrementa a pontuação a cada ciclo do jogo
-
+        score++; // Aumenta a pontuação a cada ciclo do jogo
         usleep(30000);
     }
-
-    if (health <= 0) {
-        // Para a música ao finalizar o jogo e libera a memória
-        Mix_HaltMusic();
-        Mix_FreeMusic(bgMusic);
-
-        screenSetColor(RED, BLACK);
-        screenClear();
-        
-        const char *gameOverMessage[] = {
-            "*****************************************************",
-            "*                                                   *",
-            "*               A ultima centelha se apagou.        *",
-            "*                                                   *",
-            "*      A alma se perdeu no vazio... mas talvez      *",
-            "*        ainda haja esperança em um novo começo.    *",
-            "*                                                   *",
-            "*****************************************************"
-        };
-        int messageLines = sizeof(gameOverMessage) / sizeof(gameOverMessage[0]);
-        int startY = (MAXY - messageLines) / 2;
-        int startX = (MAXX - strlen(gameOverMessage[0])) / 2;
-
-        for (int i = 0; i < messageLines; i++) {
-            screenGotoxy(startX, startY + i);
-            printf("%s", gameOverMessage[i]);
-        }
-
-        screenUpdate();
-        sleep(20);
-    }
+    Mix_HaltMusic();
+    Mix_FreeMusic(bgMusic);
+    finalizarJogo(score); // Salvar a pontuação após o jogo
 }
+
+// Função para finalizar o jogo
+void finalizarJogo(int pontuacaoAtual) {
+    salvarMaiorPontuacao(pontuacaoAtual);
+    screenSetColor(RED, BLACK);
+    screenClear();
+    const char *gameOverMessage[] = {
+        "*****************************************",
+        "*                                       *",
+        "*         A última centelha             *",
+        "*                                       *",
+        "*     se apagou no vazio...             *",
+        "*                                       *",
+        "*     Talvez haja um novo começo.       *",
+        "*                                       *",
+        "*****************************************"
+    };
+    int messageLines = sizeof(gameOverMessage) / sizeof(gameOverMessage[0]);
+    int startY = (AREA_FIM_Y - messageLines) / 2;
+    int startX = (AREA_FIM_X - strlen(gameOverMessage[0])) / 2;
+    for (int i = 0; i < messageLines; i++) {
+        screenGotoxy(startX, startY + i);
+        printf("%s", gameOverMessage[i]);
+    }
+    screenUpdate();
+    sleep(2);
+}
+
 int main() {
     int ch = 0;
     screenInit(1);
@@ -452,18 +478,14 @@ int main() {
         if (keyhit()) {
             ch = readch();
             if (ch == '1') {
-                // Carrega a música e toca em loop ao iniciar o jogo
                 Mix_Music *bgMusic = Mix_LoadMUS("background_music.mp3");
                 if (!bgMusic) {
                     fprintf(stderr, "Erro ao carregar música: %s\n", Mix_GetError());
                     return 1;
                 }
                 Mix_PlayMusic(bgMusic, -1);
-
                 screenClear();
-                desenharPersonagemASCII();
                 iniciarJogo(bgMusic);
-
                 mostrarMenuPrincipal();
             } else if (ch == '2') {
                 mostrarCreditos();
@@ -477,12 +499,12 @@ int main() {
         }
     }
 
-    // Fecha SDL2_mixer
+    // Finalizar SDL2 e liberar recursos
     Mix_CloseAudio();
     SDL_Quit();
-
     keyboardDestroy();
     screenDestroy();
     timerDestroy();
+
     return 0;
 }
