@@ -20,6 +20,14 @@ int coracaoY = AREA_FIM_Y - 2;
 int health = 200;
 int bossAtaqueCooldown = 0;
 int score = 0;
+int faseAtual = 1;
+int velocidadeObstaculos = 20;     
+int velocidadeProjeteis = 5;        
+int velocidadeBossAtirar = 20;    
+Mix_Music *bgMusicFase1;
+Mix_Music *bgMusicFase2;
+
+
 
 // Estruturas para obstáculos e projéteis
 typedef struct {
@@ -32,6 +40,15 @@ typedef struct {
     int x, y;
     int active;
 } Projeteis;
+
+typedef struct {
+    int x, y;
+    int active;
+    int direcao; // 1 para baixo, -1 para cima
+} ObstaculoVertical;
+
+#define MAX_OBSTACULOS_VERTICAIS 5
+ObstaculoVertical obstaculosVerticais[MAX_OBSTACULOS_VERTICAIS];
 
 #define MAX_OBSTACULOS 10
 #define MAX_PROJETEIS 5
@@ -58,6 +75,8 @@ void limparAreaJogo();
 void bossAtirar();
 void atualizarProjeteis();
 int detectarColisaoProjeteis();
+void atualizarObstaculosVerticais();  // Adicione esta linha
+void mudarParaSegundaFase();          // E esta linha
 
 // Função para ler a maior pontuação do arquivo
 int lerMaiorPontuacao() {
@@ -211,8 +230,8 @@ void desenharPersonagemASCII() {
 void bossAtirar() {
     static int cooldown = 0;
 
-    if (cooldown <= 0) {
-        cooldown = 20 + rand() % 30;  // Tempo de intervalo entre 20 e 50 para disparos aleatórios
+     if (cooldown <= 0) {
+        cooldown = velocidadeBossAtirar + rand() % 30;
 
         for (int i = 0; i < MAX_PROJETEIS; i++) {
             if (!projeteis[i].active) {
@@ -232,8 +251,7 @@ void atualizarProjeteis() {
     static int moveCooldown = 0;
 
     if (moveCooldown <= 0) {
-        moveCooldown = 5;  // Define a velocidade dos projéteis; quanto maior, mais lento o movimento
-
+        moveCooldown = velocidadeProjeteis;
         for (int i = 0; i < MAX_PROJETEIS; i++) {
             if (projeteis[i].active) {
                 // Limpa a posição anterior do projétil
@@ -293,7 +311,7 @@ void desenharAreaComCoracao() {
 
     desenharOssos();
     atualizarProjeteis();
-
+    atualizarObstaculosVerticais();
     atualizarStatus();
 }
 
@@ -348,7 +366,7 @@ void moverCoracao(int upPressed, int downPressed, int leftPressed, int rightPres
 
 void gerarObstaculos() {
     contadorObstaculos++;
-    if (contadorObstaculos >= 20) {
+    if (contadorObstaculos >= velocidadeObstaculos) {
         contadorObstaculos = 0;
         for (int i = 0; i < MAX_OBSTACULOS; i++) {
             if (!ossos[i].active) {
@@ -376,9 +394,56 @@ int detectarColisao() {
     return 0;
 }
 
+void gerarObstaculosVerticais() {
+    static int cooldownVertical = 0;
+    cooldownVertical++;
+    if (faseAtual == 2 && cooldownVertical >= 30) {
+        cooldownVertical = 0;
+        for (int i = 0; i < MAX_OBSTACULOS_VERTICAIS; i++) {
+            if (!obstaculosVerticais[i].active) {
+                obstaculosVerticais[i].active = 1;
+                obstaculosVerticais[i].x = (rand() % (AREA_FIM_X - AREA_INICIO_X - 2)) + AREA_INICIO_X + 1;
+                obstaculosVerticais[i].y = AREA_INICIO_Y + 1;
+                obstaculosVerticais[i].direcao = 1; // Começa descendo
+                break;
+            }
+        }
+    }
+}
+
+void atualizarObstaculosVerticais() {
+    for (int i = 0; i < MAX_OBSTACULOS_VERTICAIS; i++) {
+        if (obstaculosVerticais[i].active) {
+            // Limpa a posição anterior
+            screenGotoxy(obstaculosVerticais[i].x, obstaculosVerticais[i].y);
+            printf(" ");
+
+            // Move o obstáculo
+            obstaculosVerticais[i].y += obstaculosVerticais[i].direcao;
+
+            // Verifica limites e inverte direção
+            if (obstaculosVerticais[i].y >= AREA_FIM_Y -1) {
+                obstaculosVerticais[i].direcao = -1;
+            } else if (obstaculosVerticais[i].y <= AREA_INICIO_Y + 1) {
+                obstaculosVerticais[i].direcao = 1;
+            }
+
+            // Desenha o obstáculo
+            screenGotoxy(obstaculosVerticais[i].x, obstaculosVerticais[i].y);
+            printf("*");
+
+            // Verifica colisão com o coração
+            if (obstaculosVerticais[i].x == coracaoX && obstaculosVerticais[i].y == coracaoY) {
+                obstaculosVerticais[i].active = 0;
+                health -= 30;
+            }
+        }
+    }
+}
+
 void limparAreaJogo() {
-    for (int y = AREA_INICIO_Y; y <= AREA_FIM_Y; y++) {
-        for (int x = AREA_INICIO_X; x <= AREA_FIM_X; x++) {
+    for (int y = AREA_INICIO_Y + 1; y <= AREA_FIM_Y - 1; y++) {
+        for (int x = AREA_INICIO_X + 1; x <= AREA_FIM_X - 1; x++) {
             screenGotoxy(x, y);
             printf(" ");
         }
@@ -396,11 +461,18 @@ void iniciarJogo(Mix_Music *bgMusic) {
     for (int i = 0; i < MAX_PROJETEIS; i++) {
         projeteis[i].active = 0;
     }
+    for (int i = 0; i < MAX_OBSTACULOS_VERTICAIS; i++) {
+    obstaculosVerticais[i].active = 0;
+}
     contadorObstaculos = 0;
     int jogando = 1;
     screenClear();
     desenharPersonagemASCII();
     while (jogando && health > 0) {
+         if (score >= 2000 && faseAtual == 1) {
+            faseAtual = 2;
+            mudarParaSegundaFase();
+        }
         int upPressed = 0, downPressed = 0, leftPressed = 0, rightPressed = 0;
         if (keyhit()) {
             int tecla = readch();
@@ -453,6 +525,19 @@ void finalizarJogo(int pontuacaoAtual) {
     }
     screenUpdate();
     sleep(2);
+}
+
+void mudarParaSegundaFase() {
+    // Aumenta a dificuldade dos obstáculos e projéteis
+    velocidadeObstaculos = 10;   // Obstáculos aparecem mais rápido
+    velocidadeProjeteis = 3;     // Projéteis se movem mais rápido
+    velocidadeBossAtirar = 15;   // Boss atira com mais frequência
+
+    // Opcional: Mudar a aparência do jogo
+    screenClear();
+    screenSetColor(YELLOW, DARKGRAY);
+    screenGotoxy(AREA_INICIO_X, AREA_INICIO_Y - 2);
+    printf("SEGUNDA FASE - Prepare-se para o Desafio!");
 }
 
 int main() {
