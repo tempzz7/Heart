@@ -26,6 +26,8 @@ int velocidadeProjeteis = 5;
 int velocidadeBossAtirar = 20;    
 Mix_Music *bgMusicFase1;
 Mix_Music *bgMusicFase2;
+int jogoPausado = 0;
+
 
 
 
@@ -77,6 +79,7 @@ void atualizarProjeteis();
 int detectarColisaoProjeteis();
 void atualizarObstaculosVerticais();  // Adicione esta linha
 void mudarParaSegundaFase();          // E esta linha
+void mostrarTransicaoParaSegundaFase();
 
 // Função para ler a maior pontuação do arquivo
 int lerMaiorPontuacao() {
@@ -469,7 +472,7 @@ void iniciarJogo(Mix_Music *bgMusic) {
     screenClear();
     desenharPersonagemASCII();
     while (jogando && health > 0) {
-         if (score >= 2000 && faseAtual == 1) {
+         if (score >= 100 && faseAtual == 1) {
             faseAtual = 2;
             mudarParaSegundaFase();
         }
@@ -516,29 +519,165 @@ void finalizarJogo(int pontuacaoAtual) {
         "*                                       *",
         "*****************************************"
     };
+    
     int messageLines = sizeof(gameOverMessage) / sizeof(gameOverMessage[0]);
-    int startY = (AREA_FIM_Y - messageLines) / 2;
-    int startX = (AREA_FIM_X - strlen(gameOverMessage[0])) / 2;
+    int startY = (AREA_FIM_Y - AREA_INICIO_Y + 1 - messageLines) / 2 + AREA_INICIO_Y; // Calcula a posição vertical
+    int screenWidth = AREA_FIM_X - AREA_INICIO_X + 1;
+    int messageWidth = strlen(gameOverMessage[0]);
+    int startX = (screenWidth - messageWidth) / 2 + AREA_INICIO_X; // Calcula a posição horizontal
+
     for (int i = 0; i < messageLines; i++) {
         screenGotoxy(startX, startY + i);
         printf("%s", gameOverMessage[i]);
     }
+
     screenUpdate();
     sleep(2);
 }
 
+
+void mostrarTransicaoParaSegundaFase() {
+
+    Mix_PauseMusic();
+    // Define a cor e limpa a tela
+    screenSetColor(RED, DARKGRAY);
+    screenClear();
+
+    // Desenha a imagem ASCII na tela
+    screenGotoxy(15, 1);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 2);
+    printf("⠀⠀⠀⠋⠛⢻⡟⠋⠉⠁⠀⠀⠀⠀⠀⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡄⠀⣿⡇⠀⠀⠜⠀⠀⠀⠀⠀⠀⢹⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 3);
+    printf("⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⢘⠀⠀⠀⠀⠀⣤⠀⠀⠀⢸⠀⠀⣄⠀⠀⠀⠆⠀⠀⠀⠀⠀⠀⢈⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 4);
+    printf("⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠇⠀⠀⠀⠀⣗⠀⠀⠀⠸⠀⠀⣿⠀⠀⠀⠇⠀⠀⠀⠀⠀⠀⢐⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 5);
+    printf("⠀⢤⣀⣀⡀⣐⣇⣤⣤⡀⠀⠀⠀⠀⠀⠀⠳⣀⣀⡠⠃⠣⠄⠔⠃⠀⠀⣧⠀⠀⠀⡆⠀⠀⠀⠀⠀⠀⢱⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 6);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠀⠀⠀⠓⠀⠁⠉⠀⠀⠀⠋⠉⠀⠁⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 7);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 8);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⣉⠀⠀⠀⢀⡔⠁⠀⠀⣠⠤⣤⡄⣤⣦⠔⠒⠀⠀⠀⣶⠀⠀⠀⠀⠀⠀⠀⠀⡤⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 9);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⣏⡀⠀⣠⠟⠁⠀⠀⠀⠈⠉⠀⠙⡟⠁⠀⠀⠀⠀⠀⡧⠃⠀⠀⠀⠀⠀⠀⠀⠅⣮⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 10);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠧⡇⡞⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠽⠀⠀⠀⠀⠀⠀⠀⡟⠄⠀⠀⠀⠀⠀⠀⠀⠊⣃⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 11);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⡟⠟⡗⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠗⠀⠀⠀⠀⠀⠀⠀⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠄⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 12);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⡋⠀⠀⢭⢧⠀⠀⠀⠀⠀⠀⠀⠀⡯⡆⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⢈⣗⠀⢀⢀⡠⠀⣀⠂⢀⠀");
+    screenGotoxy(15, 13);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⢀⠇⠀⠀⠈⠁⠷⠀⠀⠤⠤⠞⠒⠊⠚⠛⠗⠓⠀⠀⠦⠿⠿⠟⠟⠷⠆⠀⠀⠙⣷⠷⠛⡺⠍⠣⠕⠁⠀⠀⠀⠀");
+    screenGotoxy(15, 14);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 15);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 16);
+    printf("⠀⠀⠀⠀⠀⠀⢹⠇⡀⠀⠀⠀⠀⠀⣮⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠀⠀⠀⠀⠀⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 17);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠰⢎⡅⠀⠀⢀⡞⠀⠀⠀⠀⠠⡶⠢⠋⠂⠁⠃⢧⡂⠀⠀⠀⢼⡅⠀⠀⠀⠀⠀⣏⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 18);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠉⡢⡀⢠⣭⠀⠀⠀⠀⠌⡕⠁⠀⠀⠀⠀⠀⠀⠀⠑⡀⠀⠘⡎⠁⠀⠀⠀⠀⢿⢂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 19);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠨⠗⣷⠃⠀⠀⠀⠀⡢⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⠀⠀⡿⡅⠀⠀⠀⠀⢐⠆⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 20);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⣟⠇⠀⠀⠀⠀⠪⡈⠀⠀⠀⠀⠀⠀⠀⠀⠀⣭⠂⠀⠚⣃⠀⠀⠀⠀⡊⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 21);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠈⣣⠀⠀⠀⠀⠀⠀⢭⠂⡀⠀⠀⠀⠀⠀⠀⢁⠳⠀⠀⢫⡣⡀⠀⠀⡐⢝⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 22);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣓⠂⠀⠀⠀⠀⠀⠀⠆⣧⣆⡀⡀⠂⢀⡤⠀⠁⠀⠠⢳⣤⣠⠀⡝⡭⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 23);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡔⡿⡀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠂⠘⠋⠁⠀⠀⠀⠀⠀⠈⠑⠌⡀⡤⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    screenGotoxy(15, 24);
+    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+
+    // Atualiza a tela para exibir a imagem
+    screenUpdate();
+
+    // Pausa de 3 segundos
+    sleep(2);
+
+    // retornando a musica
+    Mix_ResumeMusic();
+
+    // Limpa a tela após a pausa
+    screenClear();
+}
+
+void desenharImagemSegundaFase() {
+    screenSetColor(WHITE, BLACK);
+    int linha = 1;
+    screenGotoxy(1, linha++);
+    printf("######################################################..####\n");
+    printf("######################################################--####\n");
+    printf("####@@################################################  ####\n");
+    printf("####--##############################################++::####\n");
+    printf("####..##############################################  ######\n");
+    printf("####--mm####################::      ::############  ++######\n");
+    printf("####++--############..                --::mm####    ########\n");
+    printf("####@@mmMM######--                      ....--::    ########\n");
+    printf("######::++####--..                                  ########\n");
+    printf("######++  --::                                    --########\n");
+    printf("######                                            --########\n");
+    printf("######--                                          --########\n");
+    printf("######--                                          ::########\n");
+    printf("######++                                            MM######\n");
+    printf("######++                                          --@@######\n");
+    printf("######--                                          ..########\n");
+    printf("######++                                          ..MM######\n");
+    printf("######++                                          ..::######\n");
+    printf("######MM..                                        ..++######\n");
+    printf("########::                              ..--..    ..--######\n");
+    printf("######MM::          ..----------..--  mm######--      ######\n");
+    printf("########++        ::########mm::--::mm##########--    ######\n");
+    printf("########mm..    ++############    ::MM##########::  ..######\n");
+    printf("##########..    ############    ..    @@########    ########\n");
+    printf("##########..    ########mm..  ####::    ####++..  --########\n");
+    printf("##########::..    ####::    ++######              ##########\n");
+    printf("############++      --..  ..########::        --############\n");
+    printf("##############@@mm--        ########MM..----################\n");
+    printf("##################MM--  ::..##@@####++::mm##################\n");
+    printf("##################@@######  --..MM##@@::####################\n");
+    printf("####################mm####::    mm@@  ::####################\n");
+    printf("####################MM####--    MMmm  ::####################\n");
+    printf("####################MM####++..    MM  @@####################\n");
+    printf("############################--MM::@@--@@##@@################\n");
+    printf("####################@@######++##MM########mm################\n");
+    printf("######################--@@##############MM##################\n");
+    printf("######################..MM############mm++##################\n");
+    printf("######################..::mm::####@@MM----##################\n");
+    printf("########################..::--::::++..  @@##################\n");
+    printf("##############################  ..    ######################\n");
+    printf("############################################################\n");
+    screenUpdate();
+}
+
+
 void mudarParaSegundaFase() {
+    jogoPausado = 1;
+    Mix_PauseMusic();
+
+    mostrarTransicaoParaSegundaFase(); // Mostra a transição
+
+    desenharImagemSegundaFase(); // Exibe a nova imagem antes de iniciar a segunda fase
+    
+    jogoPausado = 0;
+    Mix_ResumeMusic();
+
     // Aumenta a dificuldade dos obstáculos e projéteis
     velocidadeObstaculos = 10;   // Obstáculos aparecem mais rápido
     velocidadeProjeteis = 3;     // Projéteis se movem mais rápido
     velocidadeBossAtirar = 15;   // Boss atira com mais frequência
 
-    // Opcional: Mudar a aparência do jogo
+    // Mensagem de nova fase
     screenClear();
     screenSetColor(YELLOW, DARKGRAY);
     screenGotoxy(AREA_INICIO_X, AREA_INICIO_Y - 2);
     printf("SEGUNDA FASE - Prepare-se para o Desafio!");
 }
+
 
 int main() {
     int ch = 0;
@@ -546,12 +685,12 @@ int main() {
     keyboardInit();
     timerInit(50);
 
-    // Inicializa SDL2 para áudio
+    // Inicializa SDL2 para áudio com um buffer maior para reduzir travamentos
     if (SDL_Init(SDL_INIT_AUDIO) < 0) {
         fprintf(stderr, "Erro ao inicializar SDL: %s\n", SDL_GetError());
         return 1;
     }
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096) < 0) {  // Aumentei o buffer para 4096
         fprintf(stderr, "Erro ao inicializar SDL_mixer: %s\n", Mix_GetError());
         return 1;
     }
@@ -568,7 +707,8 @@ int main() {
                     fprintf(stderr, "Erro ao carregar música: %s\n", Mix_GetError());
                     return 1;
                 }
-                Mix_PlayMusic(bgMusic, -1);
+                Mix_VolumeMusic(32);  // Reduz o volume da música para 50%
+                Mix_PlayMusic(bgMusic, -1); // Inicia a música em loop
                 screenClear();
                 iniciarJogo(bgMusic);
                 mostrarMenuPrincipal();
