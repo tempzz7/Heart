@@ -22,8 +22,6 @@ int bossAtaqueCooldown = 0;
 int score = 0;
 int faseAtual = 1;
 int velocidadeObstaculos = 20;     
-int velocidadeProjeteis = 5;        
-int velocidadeBossAtirar = 20;    
 Mix_Music *bgMusicFase1;
 Mix_Music *bgMusicFase2;
 int jogoPausado = 0;
@@ -74,8 +72,6 @@ int detectarColisao();
 void atualizarStatus();
 void desenharPersonagemASCII();
 void limparAreaJogo();
-void bossAtirar();
-void atualizarProjeteis();
 int detectarColisaoProjeteis();
 void atualizarObstaculosVerticais();  // Adicione esta linha
 void mudarParaSegundaFase();          // E esta linha
@@ -230,52 +226,6 @@ void desenharPersonagemASCII() {
     printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⠃⠀⠀⠈⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
 }
 
-void bossAtirar() {
-    static int cooldown = 0;
-
-     if (cooldown <= 0) {
-        cooldown = velocidadeBossAtirar + rand() % 30;
-
-        for (int i = 0; i < MAX_PROJETEIS; i++) {
-            if (!projeteis[i].active) {
-                // Cada projétil é ativado em uma posição X aleatória no topo da área de jogo
-                projeteis[i].active = 1;
-                projeteis[i].x = AREA_INICIO_X + (rand() % (AREA_FIM_X - AREA_INICIO_X - 1));
-                projeteis[i].y = AREA_INICIO_Y;  // Sempre começa no topo
-                break;  // Sai do loop após ativar um projétil, para que apenas um seja disparado por vez
-            }
-        }
-    } else {
-        cooldown--;
-    }
-}
-
-void atualizarProjeteis() {
-    static int moveCooldown = 0;
-
-    if (moveCooldown <= 0) {
-        moveCooldown = velocidadeProjeteis;
-        for (int i = 0; i < MAX_PROJETEIS; i++) {
-            if (projeteis[i].active) {
-                // Limpa a posição anterior do projétil
-                screenGotoxy(projeteis[i].x, projeteis[i].y);
-                printf(" ");
-
-                // Move o projétil para baixo
-                projeteis[i].y += 1;
-                screenGotoxy(projeteis[i].x, projeteis[i].y);
-                printf("v");
-
-                // Desativa o projétil se ele atingir o limite inferior da área de jogo
-                if (projeteis[i].y >= AREA_FIM_Y) {
-                    projeteis[i].active = 0;
-                }
-            }
-        }
-    } else {
-        moveCooldown--;
-    }
-}
 
 int detectarColisaoProjeteis() {
     for (int i = 0; i < MAX_PROJETEIS; i++) {
@@ -313,7 +263,6 @@ void desenharAreaComCoracao() {
     screenBoxDisable();
 
     desenharOssos();
-    atualizarProjeteis();
     atualizarObstaculosVerticais();
     atualizarStatus();
 }
@@ -491,7 +440,6 @@ void iniciarJogo(Mix_Music *bgMusic) {
         moverCoracao(upPressed, downPressed, leftPressed, rightPressed);
         atualizarOssos();
         gerarObstaculos();
-        bossAtirar();
         limparAreaJogo();
         desenharAreaComCoracao();
         screenUpdate();
@@ -668,8 +616,6 @@ void mudarParaSegundaFase() {
 
     // Aumenta a dificuldade dos obstáculos e projéteis
     velocidadeObstaculos = 10;   // Obstáculos aparecem mais rápido
-    velocidadeProjeteis = 3;     // Projéteis se movem mais rápido
-    velocidadeBossAtirar = 15;   // Boss atira com mais frequência
 
     // Mensagem de nova fase
     screenClear();
