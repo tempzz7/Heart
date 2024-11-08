@@ -76,6 +76,7 @@ int detectarColisaoProjeteis();
 void atualizarObstaculosVerticais();  // Adicione esta linha
 void mudarParaSegundaFase();          // E esta linha
 void mostrarTransicaoParaSegundaFase();
+void desenharBossFixo();
 
 // Função para ler a maior pontuação do arquivo
 int lerMaiorPontuacao() {
@@ -407,6 +408,7 @@ void iniciarJogo(Mix_Music *bgMusic) {
     coracaoX = AREA_INICIO_X + 3;
     coracaoY = AREA_FIM_Y - 2;
     score = 0; // Redefinir a pontuação ao iniciar o jogo
+    faseAtual = 1; // Garantir que a primeira fase comece no início do jogo
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
         ossos[i].active = 0;
     }
@@ -414,17 +416,26 @@ void iniciarJogo(Mix_Music *bgMusic) {
         projeteis[i].active = 0;
     }
     for (int i = 0; i < MAX_OBSTACULOS_VERTICAIS; i++) {
-    obstaculosVerticais[i].active = 0;
-}
+        obstaculosVerticais[i].active = 0;
+    }
     contadorObstaculos = 0;
     int jogando = 1;
     screenClear();
     desenharPersonagemASCII();
+
     while (jogando && health > 0) {
-         if (score >= 100 && faseAtual == 1) {
+        // Verifica se deve mudar para a segunda fase
+        if (score >= 100 && faseAtual == 1) {
             faseAtual = 2;
             mudarParaSegundaFase();
         }
+
+        // Desenha o boss fixo na parte superior se estiver na segunda fase
+        if (faseAtual == 2) {
+            desenharBossFixo();
+        }
+
+        // Controle de movimento do jogador
         int upPressed = 0, downPressed = 0, leftPressed = 0, rightPressed = 0;
         if (keyhit()) {
             int tecla = readch();
@@ -437,15 +448,21 @@ void iniciarJogo(Mix_Music *bgMusic) {
                 break;
             }
         }
+
+        // Atualiza o estado do jogo
         moverCoracao(upPressed, downPressed, leftPressed, rightPressed);
         atualizarOssos();
         gerarObstaculos();
         limparAreaJogo();
         desenharAreaComCoracao();
+        
+        // Atualiza a pontuação e tela
         screenUpdate();
         score++; // Aumenta a pontuação a cada ciclo do jogo
         usleep(30000);
     }
+
+    // Parar a música e liberar recursos após o término do jogo
     Mix_HaltMusic();
     Mix_FreeMusic(bgMusic);
     finalizarJogo(score); // Salvar a pontuação após o jogo
@@ -554,51 +571,44 @@ void mostrarTransicaoParaSegundaFase() {
     screenClear();
 }
 
-void desenharImagemSegundaFase() {
+void desenharBossFixo() {
     screenSetColor(WHITE, BLACK);
-    int linha = 1;
-    screenGotoxy(1, linha++);
-    printf("######################################################..####\n");
-    printf("######################################################--####\n");
-    printf("####@@################################################  ####\n");
-    printf("####--##############################################++::####\n");
-    printf("####..##############################################  ######\n");
-    printf("####--mm####################::      ::############  ++######\n");
-    printf("####++--############..                --::mm####    ########\n");
-    printf("####@@mmMM######--                      ....--::    ########\n");
-    printf("######::++####--..                                  ########\n");
-    printf("######++  --::                                    --########\n");
-    printf("######                                            --########\n");
-    printf("######--                                          --########\n");
-    printf("######--                                          ::########\n");
-    printf("######++                                            MM######\n");
-    printf("######++                                          --@@######\n");
-    printf("######--                                          ..########\n");
-    printf("######++                                          ..MM######\n");
-    printf("######++                                          ..::######\n");
-    printf("######MM..                                        ..++######\n");
-    printf("########::                              ..--..    ..--######\n");
-    printf("######MM::          ..----------..--  mm######--      ######\n");
-    printf("########++        ::########mm::--::mm##########--    ######\n");
-    printf("########mm..    ++############    ::MM##########::  ..######\n");
-    printf("##########..    ############    ..    @@########    ########\n");
-    printf("##########..    ########mm..  ####::    ####++..  --########\n");
-    printf("##########::..    ####::    ++######              ##########\n");
-    printf("############++      --..  ..########::        --############\n");
-    printf("##############@@mm--        ########MM..----################\n");
-    printf("##################MM--  ::..##@@####++::mm##################\n");
-    printf("##################@@######  --..MM##@@::####################\n");
-    printf("####################mm####::    mm@@  ::####################\n");
-    printf("####################MM####--    MMmm  ::####################\n");
-    printf("####################MM####++..    MM  @@####################\n");
-    printf("############################--MM::@@--@@##@@################\n");
-    printf("####################@@######++##MM########mm################\n");
-    printf("######################--@@##############MM##################\n");
-    printf("######################..MM############mm++##################\n");
-    printf("######################..::mm::####@@MM----##################\n");
-    printf("########################..::--::::++..  @@##################\n");
-    printf("##############################  ..    ######################\n");
-    printf("############################################################\n");
+
+    int startX = (AREA_FIM_X + AREA_INICIO_X) / 2 - 16; // Centraliza horizontalmente fora da área de jogo
+    int startY = AREA_INICIO_Y - 15; // Coloca acima da área de jogo
+
+
+    screenGotoxy(startX, startY);
+    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠏⠙⠋⠉⠛⠛⠛⢿⣿⣿⣿⣿⣿⣿⣿⣿");
+    screenGotoxy(startX, startY + 1);
+    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠏⣀⣀⠀⠀⠀⣀⣀⣀⡨⢿⣿⣿⣿⣿⣿⣿");
+    screenGotoxy(startX, startY + 2);
+    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⢠⣾⣿⣿⡷⠒⣾⣿⣿⣿⣿⡄⢿⣿⣿⣿⣿⣿");
+    screenGotoxy(startX, startY + 3);
+    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⣾⣿⣿⡿⣃⣼⣿⠿⣿⣿⣿⡇⣼⣿⣿⣿⣿⣿");
+    screenGotoxy(startX, startY + 4);
+    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠉⠉⠁⠀⠛⠉⢙⠁⠀⠀⠀⠠⣿⣿⣿⣿⣿⣿");
+    screenGotoxy(startX, startY + 5);
+    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⣄⡀⠤⣂⣀⢀⡘⠺⠦⣄⣠⡤⣿⣿⣿⣿⣿⣿");
+    screenGotoxy(startX, startY + 6);
+    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡅⠈⡲⠄⠀⡖⠋⠙⠒⣾⠎⠇⢿⣿⣿⣿⣿⣿");
+    screenGotoxy(startX, startY + 7);
+    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀⣷⡖⣮⠄⠀⠒⣲⣿⢸⣇⣿⣿⣿⣿⣿⣿");
+    screenGotoxy(startX, startY + 8);
+    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⢻⣿⠛⠉⠉⢲⣯⠇⣸⣿⣿⣿⣿⣿⣿⣿");
+    screenGotoxy(startX, startY + 9);
+    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠒⠛⠓⡦⢶⠟⠛⢒⣿⣿⣿⣿⣿⣿⣿⣿");
+    screenGotoxy(startX, startY + 10);
+    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣆⠀⠀⠀⠀⠑⣰⣿⣿⣿⣿⣿⣿⣿⣿⣿");
+    screenGotoxy(startX, startY + 11);
+    printf("⣿⣿⣿⣿⠟⠋⠉⢹⠿⣿⣿⣿⠛⢿⣿⡷⠀⠒⠀⢾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿");
+    screenGotoxy(startX, startY + 12);
+    printf("⣿⣿⣿⣧⡀⠀⠀⢾⡀⠉⠉⠁⠀⠀⢀⣀⠀⠀⠀⠈⠁⠀⢻⡿⠟⠛⠟⠛⠉⠛");
+    screenGotoxy(startX, startY + 13);
+    printf("⣿⡿⠛⠛⠉⠂⠀⠀⠀⢀⡂⠓⠄⠀⠈⠉⠗⣉⠈⠁⠂⠀⠀⠈⠁⠀⠀⠀⠀⠀");
+    screenGotoxy(startX, startY + 14);
+    printf("⣿⡀⠀⠈⠆⠀⠀⠀⠀⠀⠉⠘⠐⠿⠿⠁⠀⠘⠃⠤⠤⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+   
     screenUpdate();
 }
 
@@ -607,23 +617,19 @@ void mudarParaSegundaFase() {
     jogoPausado = 1;
     Mix_PauseMusic();
 
-    mostrarTransicaoParaSegundaFase(); // Mostra a transição
+    screenClear();
+    mostrarTransicaoParaSegundaFase(); // Mostra a transição de fase
 
-    desenharImagemSegundaFase(); // Exibe a nova imagem antes de iniciar a segunda fase
-    
+    desenharBossFixo(); // Exibe o boss fixo na parte superior uma única vez
+
     jogoPausado = 0;
     Mix_ResumeMusic();
 
-    // Aumenta a dificuldade dos obstáculos e projéteis
-    velocidadeObstaculos = 10;   // Obstáculos aparecem mais rápido
+    velocidadeObstaculos = 10;   // Ajuste a dificuldade da fase
 
-    // Mensagem de nova fase
-    screenClear();
     screenSetColor(YELLOW, DARKGRAY);
     screenGotoxy(AREA_INICIO_X, AREA_INICIO_Y - 2);
-    printf("SEGUNDA FASE - Prepare-se para o Desafio!");
 }
-
 
 int main() {
     int ch = 0;
