@@ -27,8 +27,6 @@ Mix_Music *bgMusicFase2;
 int jogoPausado = 0;
 
 
-
-
 // Estruturas para obstáculos e projéteis
 typedef struct {
     int x, y;
@@ -239,12 +237,10 @@ void desenharAreaComCoracao() {
     screenGotoxy(AREA_FIM_X, AREA_INICIO_Y); printf("╗");
     screenGotoxy(AREA_INICIO_X, AREA_FIM_Y); printf("╚");
     screenGotoxy(AREA_FIM_X, AREA_FIM_Y); printf("╝");
-
-    screenSetColor(RED, DARKGRAY);
+    screenSetColor(RED, DARKGRAY); // Define a cor de fundo correta para o emoji
     screenGotoxy(coracaoX, coracaoY);
-    printf("❤");
+    printf("💜");
     screenBoxDisable();
-
     desenharOssos();
     atualizarObstaculosVerticais();
     atualizarStatus();
@@ -352,7 +348,6 @@ void atualizarObstaculosVerticais() {
             // Limpa a posição anterior
             screenGotoxy(obstaculosVerticais[i].x, obstaculosVerticais[i].y);
             printf(" ");
-
             // Move o obstáculo
             obstaculosVerticais[i].y += obstaculosVerticais[i].direcao;
 
@@ -401,7 +396,6 @@ void iniciarJogo(Mix_Music *bgMusic) {
     int jogando = 1;
     screenClear();
     desenharPersonagemASCII();
-
     while (jogando && health > 0) {
         // Verifica se deve mudar para a segunda fase
         if (score >= 100 && faseAtual == 1) {
@@ -431,16 +425,16 @@ void iniciarJogo(Mix_Music *bgMusic) {
         // Atualiza o estado do jogo
         moverCoracao(upPressed, downPressed, leftPressed, rightPressed);
         atualizarOssos();
+        atualizarObstaculosVerticais();
         gerarObstaculos();
         limparAreaJogo();
         desenharAreaComCoracao();
-        
+
         // Atualiza a pontuação e tela
         screenUpdate();
         score++; // Aumenta a pontuação a cada ciclo do jogo
         usleep(30000);
     }
-
     // Parar a música e liberar recursos após o término do jogo
     Mix_HaltMusic();
     Mix_FreeMusic(bgMusic);
