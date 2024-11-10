@@ -35,12 +35,6 @@ typedef struct {
     int active;
     int comprimento;
 } ObstaculoOsso;
-
-typedef struct {
-    int x, y;
-    int active;
-} Projeteis;
-
 typedef struct {
     int x, y;
     int active;
@@ -51,10 +45,8 @@ typedef struct {
 ObstaculoVertical obstaculosVerticais[MAX_OBSTACULOS_VERTICAIS];
 
 #define MAX_OBSTACULOS 10
-#define MAX_PROJETEIS 5
 
 ObstaculoOsso ossos[MAX_OBSTACULOS];
-Projeteis projeteis[MAX_PROJETEIS];
 int contadorObstaculos = 0;
 
 // Declarações de funções
@@ -72,7 +64,6 @@ int detectarColisao();
 void atualizarStatus();
 void desenharPersonagemASCII();
 void limparAreaJogo();
-int detectarColisaoProjeteis();
 void atualizarObstaculosVerticais();  // Adicione esta linha
 void mudarParaSegundaFase();          // E esta linha
 void mostrarTransicaoParaSegundaFase();
@@ -228,15 +219,6 @@ void desenharPersonagemASCII() {
 }
 
 
-int detectarColisaoProjeteis() {
-    for (int i = 0; i < MAX_PROJETEIS; i++) {
-        if (projeteis[i].active && projeteis[i].x == coracaoX && projeteis[i].y == coracaoY) {
-            projeteis[i].active = 0;
-            return 1;
-        }
-    }
-    return 0;
-}
 
 void desenharAreaComCoracao() {
     screenSetColor(LIGHTMAGENTA, DARKGRAY);
@@ -312,7 +294,7 @@ void moverCoracao(int upPressed, int downPressed, int leftPressed, int rightPres
     if (rightPressed && coracaoX < AREA_FIM_X - 1) {
         coracaoX++;
     }
-    if (detectarColisao() || detectarColisaoProjeteis()) {
+    if (detectarColisao()) {
         health -= 20;
     }
 }
@@ -411,9 +393,6 @@ void iniciarJogo(Mix_Music *bgMusic) {
     faseAtual = 1; // Garantir que a primeira fase comece no início do jogo
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
         ossos[i].active = 0;
-    }
-    for (int i = 0; i < MAX_PROJETEIS; i++) {
-        projeteis[i].active = 0;
     }
     for (int i = 0; i < MAX_OBSTACULOS_VERTICAIS; i++) {
         obstaculosVerticais[i].active = 0;
