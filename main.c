@@ -31,6 +31,12 @@ Mix_Music *bgMusicFase2;
 int jogoPausado = 0;
 int playerMoving = 0;
 
+
+typedef struct No {
+    int pontuacao;
+    struct No *proximo;
+} No;
+
 typedef struct {
     int x, y;
     int active;
@@ -62,13 +68,14 @@ ObstaculoAmarelo obstaculosAmarelos[MAX_OBSTACULOS_AMARELOS];
 
 // Declarações de funções
 void animarCoracao();
-void mostrarMenuPrincipal();
+void mostrarMenuPrincipal(No *pontuacoes);
 void mostrarCreditos();
 void desenharAreaComCoracao();
 void desenharOssos();
 void atualizarOssos();
-void iniciarJogo(Mix_Music *bgMusic);
-void morte(int pontuacaoAtual);
+void iniciarJogo(Mix_Music *bgMusic, No *pontuacoes);
+void finalizarJogo(No *pontuacoes, int pontuacaoAtual);
+void morte(No *pontuacoes, int pontuacaoAtual);
 void moverCoracao(int upPressed, int downPressed, int leftPressed, int rightPressed);
 void gerarObstaculos();
 int detectarColisao();
@@ -80,45 +87,66 @@ void mostrarTransicaoParaSegundaFase();
 void desenharBossFixo();
 void mudarParaTerceiraFase();
 void mostrarTransicaoParaTerceiraFase();
-void finalizarJogo(int pontuacaoAtual);
 void atualizarObstaculosMagenta();
 void gerarObstaculosMagenta();
 void desenharIndicadoresTerceiraFase();
 void gerarObstaculosAmarelos();
 void atualizarObstaculosAmarelos();
 
-// Função para ler a maior pontuação do arquivo
-int lerMaiorPontuacao() {
+
+No* criarNo(int pontuacao) {
+    No *novoNo = (No*)malloc(sizeof(No));
+    novoNo->pontuacao = pontuacao;
+    novoNo->proximo = NULL;
+    return novoNo;
+}
+
+void adicionarPontuacao(No **cabeca, int pontuacao) {
+    No *novoNo = criarNo(pontuacao);
+    novoNo->proximo = *cabeca;
+    *cabeca = novoNo;
+}
+
+int obterMaiorPontuacao(No *cabeca) {
     int maiorPontuacao = 0;
-    FILE *file = fopen("score.dat", "r");
-    if (file != NULL) {
-        fscanf(file, "%d", &maiorPontuacao);
-        fclose(file);
+    No *atual = cabeca;
+    while (atual != NULL) {
+        if (atual->pontuacao > maiorPontuacao) {
+            maiorPontuacao = atual->pontuacao;
+        }
+        atual = atual->proximo;
     }
     return maiorPontuacao;
 }
 
-// Função para salvar a maior pontuação no arquivo
-void salvarMaiorPontuacao(int pontuacaoAtual) {
-    int maiorPontuacao = lerMaiorPontuacao();
-    if (pontuacaoAtual > maiorPontuacao) {
-        FILE *file = fopen("score.dat", "w");
-        if (file != NULL) {
-            fprintf(file, "%d", pontuacaoAtual);
-            fclose(file);
-        }
+void salvarMaiorPontuacao(No *cabeca) {
+    int maiorPontuacao = obterMaiorPontuacao(cabeca);
+    FILE *file = fopen("score.dat", "w");
+    if (file != NULL) {
+        fprintf(file, "%d", maiorPontuacao);
+        fclose(file);
     }
 }
-
-// Função para exibir a maior pontuação na tela inicial
-void mostrarMaiorPontuacao() {
-    int maiorPontuacao = lerMaiorPontuacao();
-    screenSetColor(LIGHTMAGENTA, DARKGRAY);
-    screenGotoxy(33, 26);
+// Função para ler a maior pontuação do arquivo
+void mostrarMaiorPontuacao(No *pontuacoes) {
+    int maiorPontuacao = obterMaiorPontuacao(pontuacoes);
+    screenSetColor(YELLOW, DARKGRAY);
+    screenGotoxy(33, 25);
     printf("Maior Pontuação: %d", maiorPontuacao);
 }
 
-void mostrarMenuPrincipal() {
+void carregarMaiorPontuacao(No **cabeca) {
+    FILE *file = fopen("score.dat", "r");
+    if (file != NULL) {
+        int maiorPontuacao;
+        if (fscanf(file, "%d", &maiorPontuacao) == 1) {
+            adicionarPontuacao(cabeca, maiorPontuacao);
+        }
+        fclose(file);
+    }
+}
+
+void mostrarMenuPrincipal(No *pontuacoes) {
     screenSetColor(RED, DARKGRAY);
     screenClear();
     animarCoracao();
@@ -150,7 +178,7 @@ void mostrarMenuPrincipal() {
     screenGotoxy(33, 24);
     printf("3. Sair");
     screenGotoxy(33, 25);
-    mostrarMaiorPontuacao();
+    mostrarMaiorPontuacao(pontuacoes);
 }
 
 void mostrarCreditos() {
@@ -450,13 +478,12 @@ void atualizarObstaculosAmarelos() {
     }
 }
 
-void iniciarJogo(Mix_Music *bgMusic) {
+void iniciarJogo(Mix_Music *bgMusic, No *pontuacoes) {
     health = 200;
     coracaoX = AREA_INICIO_X + 3;
     coracaoY = AREA_FIM_Y - 2;
     score = 0;
     faseAtual = 1;
-
     // Inicializar obstáculos
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
         ossos[i].active = 0;
@@ -467,13 +494,10 @@ void iniciarJogo(Mix_Music *bgMusic) {
     for (int i = 0; i < MAX_OBSTACULOS_AMARELOS; i++) {
         obstaculosAmarelos[i].active = 0;
     }
-
     contadorObstaculos = 0;
     int jogando = 1;
-
     screenClear();
     desenharPersonagemASCII();
-
     while (jogando && health > 0) {
         // Verificar transições de fase
         if (score >= PONTOS_FASE2 && faseAtual == 1) {
@@ -485,10 +509,9 @@ void iniciarJogo(Mix_Music *bgMusic) {
             mudarParaTerceiraFase();
         }
         if (score >= PONTOS_FIM_JOGO && faseAtual == 3) {
-            finalizarJogo(score);
+            finalizarJogo(pontuacoes, score);
             break;
         }
-
         // Controle de movimento do jogador
         int upPressed = 0, downPressed = 0, leftPressed = 0, rightPressed = 0;
         if (keyhit()) {
@@ -502,10 +525,8 @@ void iniciarJogo(Mix_Music *bgMusic) {
                 break;
             }
         }
-
         // Limpa a área do jogo primeiro
         limparAreaJogo();
-
         // Atualiza o estado do jogo
         moverCoracao(upPressed, downPressed, leftPressed, rightPressed);
         if (detectarColisao()) {
@@ -520,26 +541,23 @@ void iniciarJogo(Mix_Music *bgMusic) {
         gerarObstaculos();
         gerarObstaculosMagenta();
         gerarObstaculosAmarelos();
-
         desenharAreaComCoracao();
-
         // Indicadores visuais para a terceira fase
         desenharIndicadoresTerceiraFase();
-
         // Atualiza a pontuação e a tela
         screenUpdate();
         score++;
         usleep(30000);
     }
-
     // Parar a música e liberar recursos após o término do jogo
     Mix_HaltMusic();
     Mix_FreeMusic(bgMusic);
-    finalizarJogo(score);
+    finalizarJogo(pontuacoes, score);
 }
 
-void morte(int pontuacaoAtual) {
-    salvarMaiorPontuacao(pontuacaoAtual);
+void morte(No *pontuacoes, int pontuacaoAtual) {
+    adicionarPontuacao(&pontuacoes, pontuacaoAtual);
+    salvarMaiorPontuacao(pontuacoes);
     screenSetColor(RED, BLACK);
     screenClear();
     const char *gameOverMessage[] = {
@@ -554,20 +572,19 @@ void morte(int pontuacaoAtual) {
         "*                                       *",
         "*****************************************"
     };
-
     int messageLines = sizeof(gameOverMessage) / sizeof(gameOverMessage[0]);
     int startY = (AREA_FIM_Y - AREA_INICIO_Y + 1 - messageLines) / 2 + AREA_INICIO_Y;
     int screenWidth = AREA_FIM_X - AREA_INICIO_X + 1;
     int messageWidth = strlen(gameOverMessage[0]);
     int startX = (screenWidth - messageWidth) / 2 + AREA_INICIO_X;
-
     for (int i = 0; i < messageLines; i++) {
         screenGotoxy(startX, startY + i);
         printf("%s", gameOverMessage[i]);
     }
-
     screenUpdate();
     sleep(3);
+    mostrarMaiorPontuacao(pontuacoes); // Adicione esta linha para atualizar a maior pontuação imediatamente
+    screenUpdate();
 }
 
 void mostrarTransicaoParaSegundaFase() {
@@ -765,8 +782,9 @@ void atualizarObstaculosMagenta() {
     }
 }
 
-void finalizarJogo(int pontuacaoAtual) {
-    salvarMaiorPontuacao(pontuacaoAtual);
+void finalizarJogo(No *pontuacoes, int pontuacaoAtual) {
+    adicionarPontuacao(&pontuacoes, pontuacaoAtual);
+    salvarMaiorPontuacao(pontuacoes);
     screenSetColor(RED, BLACK);
     screenClear();
     if (pontuacaoAtual >= PONTOS_FIM_JOGO) {
@@ -794,18 +812,21 @@ void finalizarJogo(int pontuacaoAtual) {
         screenUpdate();
         sleep(3);
     } else {
-        morte(pontuacaoAtual);
+        morte(pontuacoes, pontuacaoAtual);
     }
-    mostrarMenuPrincipal();
+    mostrarMaiorPontuacao(pontuacoes); // Atualiza a maior pontuação imediatamente
+    screenUpdate(); // Atualiza a tela para refletir a mudança
+    mostrarMenuPrincipal(pontuacoes);
 }
 
 int main() {
+    No *pontuacoes = NULL;
+    carregarMaiorPontuacao(&pontuacoes);
     int ch = 0;
     screenInit(1);
     keyboardInit();
     timerInit(50);
     srand(time(NULL));
-
     if (SDL_Init(SDL_INIT_AUDIO) < 0) {
         fprintf(stderr, "Erro ao inicializar SDL: %s\n", SDL_GetError());
         return 1;
@@ -814,10 +835,8 @@ int main() {
         fprintf(stderr, "Erro ao inicializar SDL_mixer: %s\n", Mix_GetError());
         return 1;
     }
-
-    mostrarMenuPrincipal();
+    mostrarMenuPrincipal(pontuacoes);
     screenUpdate();
-
     while (jogoEmExecucao) {
         if (keyhit()) {
             ch = readch();
@@ -830,25 +849,23 @@ int main() {
                 Mix_VolumeMusic(32);
                 Mix_PlayMusic(bgMusic, -1);
                 screenClear();
-                iniciarJogo(bgMusic);
-                mostrarMenuPrincipal();
+                iniciarJogo(bgMusic, pontuacoes);
+                mostrarMenuPrincipal(pontuacoes);
             } else if (ch == '2') {
                 mostrarCreditos();
                 screenUpdate();
                 readch();
-                mostrarMenuPrincipal();
+                mostrarMenuPrincipal(pontuacoes);
             } else if (ch == '3') {
                 jogoEmExecucao = 0;
             }
             screenUpdate();
         }
     }
-
     Mix_CloseAudio();
     SDL_Quit();
     keyboardDestroy();
     screenDestroy();
     timerDestroy();
-
     return 0;
 }
