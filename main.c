@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 #include "screen.h"
@@ -12,6 +13,9 @@
 #define AREA_FIM_X 70
 #define AREA_INICIO_Y 15
 #define AREA_FIM_Y 25
+#define PONTOS_FASE2 2000
+#define PONTOS_FASE3 4000
+#define PONTOS_FIM_JOGO 6000
 
 int menuOpcao = 0;
 int jogoEmExecucao = 1;
@@ -21,31 +25,40 @@ int health = 200;
 int bossAtaqueCooldown = 0;
 int score = 0;
 int faseAtual = 1;
-int velocidadeObstaculos = 20;     
+int velocidadeObstaculos = 20;
 Mix_Music *bgMusicFase1;
 Mix_Music *bgMusicFase2;
 int jogoPausado = 0;
+int playerMoving = 0;
 
+typedef struct {
+    int x, y;
+    int active;
+    int comprimento;
+} ObstaculoMagenta;
 
-// Estruturas para obstáculos e projéteis
+#define MAX_OBSTACULOS_MAGENTA 5
+ObstaculoMagenta obstaculosMagenta[MAX_OBSTACULOS_MAGENTA];
+
 typedef struct {
     int x, y;
     int active;
     int comprimento;
 } ObstaculoOsso;
+
+#define MAX_OBSTACULOS 10
+ObstaculoOsso ossos[MAX_OBSTACULOS];
+int contadorObstaculos = 0;
+
+// Novo tipo de obstáculo amarelo
 typedef struct {
     int x, y;
     int active;
-    int direcao; // 1 para baixo, -1 para cima
-} ObstaculoVertical;
+    int comprimento;
+} ObstaculoAmarelo;
 
-#define MAX_OBSTACULOS_VERTICAIS 5
-ObstaculoVertical obstaculosVerticais[MAX_OBSTACULOS_VERTICAIS];
-
-#define MAX_OBSTACULOS 10
-
-ObstaculoOsso ossos[MAX_OBSTACULOS];
-int contadorObstaculos = 0;
+#define MAX_OBSTACULOS_AMARELOS 5
+ObstaculoAmarelo obstaculosAmarelos[MAX_OBSTACULOS_AMARELOS];
 
 // Declarações de funções
 void animarCoracao();
@@ -55,17 +68,24 @@ void desenharAreaComCoracao();
 void desenharOssos();
 void atualizarOssos();
 void iniciarJogo(Mix_Music *bgMusic);
-void finalizarJogo(int pontuacaoAtual);
+void morte(int pontuacaoAtual);
 void moverCoracao(int upPressed, int downPressed, int leftPressed, int rightPressed);
 void gerarObstaculos();
 int detectarColisao();
 void atualizarStatus();
 void desenharPersonagemASCII();
 void limparAreaJogo();
-void atualizarObstaculosVerticais();  // Adicione esta linha
-void mudarParaSegundaFase();          // E esta linha
+void mudarParaSegundaFase();
 void mostrarTransicaoParaSegundaFase();
 void desenharBossFixo();
+void mudarParaTerceiraFase();
+void mostrarTransicaoParaTerceiraFase();
+void finalizarJogo(int pontuacaoAtual);
+void atualizarObstaculosMagenta();
+void gerarObstaculosMagenta();
+void desenharIndicadoresTerceiraFase();
+void gerarObstaculosAmarelos();
+void atualizarObstaculosAmarelos();
 
 // Função para ler a maior pontuação do arquivo
 int lerMaiorPontuacao() {
@@ -94,7 +114,7 @@ void salvarMaiorPontuacao(int pontuacaoAtual) {
 void mostrarMaiorPontuacao() {
     int maiorPontuacao = lerMaiorPontuacao();
     screenSetColor(LIGHTMAGENTA, DARKGRAY);
-    screenGotoxy(33, 26); // Ajuste para exibir abaixo das opções do menu
+    screenGotoxy(33, 26);
     printf("Maior Pontuação: %d", maiorPontuacao);
 }
 
@@ -129,7 +149,7 @@ void mostrarMenuPrincipal() {
     printf("2. Créditos");
     screenGotoxy(33, 24);
     printf("3. Sair");
-    screenGotoxy(33, 25); // Ajuste da posição para que o texto de maior pontuação não sobreponha as opções.
+    screenGotoxy(33, 25);
     mostrarMaiorPontuacao();
 }
 
@@ -171,7 +191,7 @@ void animarCoracao() {
 }
 
 void desenharPersonagemASCII() {
-    screenSetColor(WHITE, BLACK);
+    screenSetColor(WHITE, DARKGRAY);
     screenGotoxy(15, 1);
     printf("⠀⢀⣠⣤⣶⣷⣿⣾⣦⣤⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
     screenGotoxy(15, 2);
@@ -197,13 +217,13 @@ void desenharPersonagemASCII() {
     screenGotoxy(15, 12);
     printf("⠀⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⣧⡟⠹⣉⡿⠋⠻⡿⠻⢷⡶⠦⣾⣇⣀⣀⣀⣴⣶⣶⣿⣷⣾⣿⣿⡿⢿⣿⠏⠀⠀⠀⠀");
     screenGotoxy(15, 13);
-    printf("⠀⠀⠀⠀⠀⠸⣿⣿⣿⣾⣿⣩⣷⣤⣨⣧⡀⢀⠇⠀⠀⡇⠀⠀⢿⠀⢿⣭⣿⣿⣼⣿⣿⣿⡿⠋⠀⢸⡟⠀⠀⠀⠀⠀");
+    printf("⠀⠀⠀⠀⠀⠸⣿⣿⣿⣿⣿⣿⣿⣤⣨⣧⡀⢀⠇⠀⠀⡇⠀⠀⢿⠀⢿⣭⣿⣿⣼⣿⣿⣿⡿⠋⠀⢸⡟⠀⠀⠀⠀⠀");
     screenGotoxy(15, 14);
     printf("⠀⠀⠀⠀⠀⠀⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣶⣾⣿⣶⣶⣧⣤⣼⣷⣿⣿⣿⣿⣿⠏⠀⠀⠀⠈⠇⠀⠀⠀⠀⠀");
     screenGotoxy(15, 15);
-    printf("⠀⠀⠀⠀⠀⠀⠀⣿⡈⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    printf("⠀⠀⠀⠀⠀⠀⠀⣿⡈⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
     screenGotoxy(15, 16);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠈⠣⠀⠘⠻⣿⣿⣿⢿⣿⣿⣿⣿⡿⢿⣿⢿⣿⣿⣿⣿⣿⠿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    printf("⠀⠀⠀⠀⠀⠀⠀⠈⠣⠀⠘⠻⣿⣿⣿⢿⣿⣿⣿⣿⡿⢿⣿⢿⣿⣿⣿⣿⠿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
     screenGotoxy(15, 17);
     printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⢿⣷⣤⣧⣀⠀⡇⠀⠀⣧⠀⠸⠀⠘⢿⣿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
     screenGotoxy(15, 18);
@@ -215,8 +235,6 @@ void desenharPersonagemASCII() {
     screenGotoxy(15, 21);
     printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⠃⠀⠀⠈⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
 }
-
-
 
 void desenharAreaComCoracao() {
     screenSetColor(LIGHTMAGENTA, DARKGRAY);
@@ -237,12 +255,11 @@ void desenharAreaComCoracao() {
     screenGotoxy(AREA_FIM_X, AREA_INICIO_Y); printf("╗");
     screenGotoxy(AREA_INICIO_X, AREA_FIM_Y); printf("╚");
     screenGotoxy(AREA_FIM_X, AREA_FIM_Y); printf("╝");
-    screenSetColor(RED, DARKGRAY); // Define a cor de fundo correta para o emoji
+    screenSetColor(RED, BLACK);
     screenGotoxy(coracaoX, coracaoY);
     printf("💜");
     screenBoxDisable();
     desenharOssos();
-    atualizarObstaculosVerticais();
     atualizarStatus();
 }
 
@@ -250,7 +267,7 @@ void atualizarStatus() {
     screenSetColor(RED, BLACK);
     screenGotoxy(AREA_INICIO_X, AREA_FIM_Y + 2);
     printf("HP: %d", health);
-    screenGotoxy(AREA_FIM_X - 10, AREA_FIM_Y + 2);  // Posiciona a pontuação no canto direito
+    screenGotoxy(AREA_FIM_X - 10, AREA_FIM_Y + 2);
     printf("Score: %d", score);
 }
 
@@ -261,6 +278,28 @@ void desenharOssos() {
             for (int j = 0; j < ossos[i].comprimento; j++) {
                 screenGotoxy(ossos[i].x, ossos[i].y + j);
                 printf("|");
+            }
+        }
+    }
+
+    // Desenha obstáculos roxos
+    for (int i = 0; i < MAX_OBSTACULOS_MAGENTA; i++) {
+        if (obstaculosMagenta[i].active) {
+            screenSetColor(DARK_PURPLE, BLACK);
+            for (int j = 0; j < obstaculosMagenta[i].comprimento; j++) {
+                screenGotoxy(obstaculosMagenta[i].x, obstaculosMagenta[i].y + j);
+                printf("|");
+            }
+        }
+    }
+
+    // Desenha obstáculos amarelos
+    for (int i = 0; i < MAX_OBSTACULOS_AMARELOS; i++) {
+        if (obstaculosAmarelos[i].active) {
+            screenSetColor(YELLOW, BLACK);
+            for (int j = 0; j < obstaculosAmarelos[i].comprimento; j++) {
+                screenGotoxy(obstaculosAmarelos[i].x, obstaculosAmarelos[i].y + j);
+                printf("$");
             }
         }
     }
@@ -278,20 +317,23 @@ void atualizarOssos() {
 }
 
 void moverCoracao(int upPressed, int downPressed, int leftPressed, int rightPressed) {
+    playerMoving = 0;
+
     if (upPressed && coracaoY > AREA_INICIO_Y + 1) {
         coracaoY--;
+        playerMoving = 1;
     }
     if (downPressed && coracaoY < AREA_FIM_Y - 2) {
         coracaoY++;
+        playerMoving = 1;
     }
     if (leftPressed && coracaoX > AREA_INICIO_X + 1) {
         coracaoX--;
+        playerMoving = 1;
     }
     if (rightPressed && coracaoX < AREA_FIM_X - 1) {
         coracaoX++;
-    }
-    if (detectarColisao()) {
-        health -= 20;
+        playerMoving = 1;
     }
 }
 
@@ -312,63 +354,49 @@ void gerarObstaculos() {
 }
 
 int detectarColisao() {
+    // Verificar colisões com Obstáculos de Osso
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
         if (ossos[i].active) {
             for (int j = 0; j < ossos[i].comprimento; j++) {
                 if (ossos[i].x == coracaoX && ossos[i].y + j == coracaoY) {
                     ossos[i].active = 0;
+                    health -= 20;
                     return 1;
                 }
             }
         }
     }
+
+    // Verificar colisões com Obstáculos Roxos
+    for (int i = 0; i < MAX_OBSTACULOS_MAGENTA; i++) {
+        if (obstaculosMagenta[i].active) {
+            for (int j = 0; j < obstaculosMagenta[i].comprimento; j++) {
+                if (obstaculosMagenta[i].x == coracaoX && obstaculosMagenta[i].y + j == coracaoY) {
+                    if (playerMoving) {
+                        obstaculosMagenta[i].active = 0;
+                        health -= 30;
+                        return 1;
+                    }
+                }
+            }
+        }
+    }
+
+    // Verificar colisões com Obstáculos Amarelos
+    for (int i = 0; i < MAX_OBSTACULOS_AMARELOS; i++) {
+        if (obstaculosAmarelos[i].active) {
+            for (int j = 0; j < obstaculosAmarelos[i].comprimento; j++) {
+                if (obstaculosAmarelos[i].x == coracaoX && obstaculosAmarelos[i].y + j == coracaoY) {
+                    obstaculosAmarelos[i].active = 0;
+                    health += 40;
+                    if (health > 200) health = 200;
+                    return 1;
+                }
+            }
+        }
+    }
+
     return 0;
-}
-
-void gerarObstaculosVerticais() {
-    static int cooldownVertical = 0;
-    cooldownVertical++;
-    if (faseAtual == 2 && cooldownVertical >= 30) {
-        cooldownVertical = 0;
-        for (int i = 0; i < MAX_OBSTACULOS_VERTICAIS; i++) {
-            if (!obstaculosVerticais[i].active) {
-                obstaculosVerticais[i].active = 1;
-                obstaculosVerticais[i].x = (rand() % (AREA_FIM_X - AREA_INICIO_X - 2)) + AREA_INICIO_X + 1;
-                obstaculosVerticais[i].y = AREA_INICIO_Y + 1;
-                obstaculosVerticais[i].direcao = 1; // Começa descendo
-                break;
-            }
-        }
-    }
-}
-
-void atualizarObstaculosVerticais() {
-    for (int i = 0; i < MAX_OBSTACULOS_VERTICAIS; i++) {
-        if (obstaculosVerticais[i].active) {
-            // Limpa a posição anterior
-            screenGotoxy(obstaculosVerticais[i].x, obstaculosVerticais[i].y);
-            printf(" ");
-            // Move o obstáculo
-            obstaculosVerticais[i].y += obstaculosVerticais[i].direcao;
-
-            // Verifica limites e inverte direção
-            if (obstaculosVerticais[i].y >= AREA_FIM_Y -1) {
-                obstaculosVerticais[i].direcao = -1;
-            } else if (obstaculosVerticais[i].y <= AREA_INICIO_Y + 1) {
-                obstaculosVerticais[i].direcao = 1;
-            }
-
-            // Desenha o obstáculo
-            screenGotoxy(obstaculosVerticais[i].x, obstaculosVerticais[i].y);
-            printf("*");
-
-            // Verifica colisão com o coração
-            if (obstaculosVerticais[i].x == coracaoX && obstaculosVerticais[i].y == coracaoY) {
-                obstaculosVerticais[i].active = 0;
-                health -= 30;
-            }
-        }
-    }
 }
 
 void limparAreaJogo() {
@@ -380,32 +408,85 @@ void limparAreaJogo() {
     }
 }
 
+void gerarObstaculosAmarelos() {
+    static int contadorAmarelos = 0;
+    contadorAmarelos++;
+    int frequencia = 150; // Aumenta o espaçamento entre os obstáculos amarelos
+
+    if (faseAtual == 3 && contadorAmarelos >= frequencia) {
+        contadorAmarelos = 0;
+        for (int i = 0; i < MAX_OBSTACULOS_AMARELOS; i++) {
+            if (!obstaculosAmarelos[i].active) {
+                obstaculosAmarelos[i].active = 1;
+                obstaculosAmarelos[i].x = AREA_FIM_X - 1;
+                obstaculosAmarelos[i].y = (rand() % (AREA_FIM_Y - AREA_INICIO_Y - 2)) + AREA_INICIO_Y + 1;
+                obstaculosAmarelos[i].comprimento = 1;
+                break;
+            }
+        }
+    }
+}
+
+void atualizarObstaculosAmarelos() {
+    for (int i = 0; i < MAX_OBSTACULOS_AMARELOS; i++) {
+        if (obstaculosAmarelos[i].active) {
+            for (int j = 0; j < obstaculosAmarelos[i].comprimento; j++) {
+                screenGotoxy(obstaculosAmarelos[i].x, obstaculosAmarelos[i].y + j);
+                printf(" ");
+            }
+
+            obstaculosAmarelos[i].x -= 1;
+
+            if (obstaculosAmarelos[i].x < AREA_INICIO_X + 1) {
+                obstaculosAmarelos[i].active = 0;
+            } else {
+                screenSetColor(YELLOW, BLACK);
+                for (int j = 0; j < obstaculosAmarelos[i].comprimento; j++) {
+                    screenGotoxy(obstaculosAmarelos[i].x, obstaculosAmarelos[i].y + j);
+                    printf("$");
+                }
+            }
+        }
+    }
+}
+
 void iniciarJogo(Mix_Music *bgMusic) {
     health = 200;
     coracaoX = AREA_INICIO_X + 3;
     coracaoY = AREA_FIM_Y - 2;
-    score = 0; // Redefinir a pontuação ao iniciar o jogo
-    faseAtual = 1; // Garantir que a primeira fase comece no início do jogo
+    score = 0;
+    faseAtual = 1;
+
+    // Inicializar obstáculos
     for (int i = 0; i < MAX_OBSTACULOS; i++) {
         ossos[i].active = 0;
     }
-    for (int i = 0; i < MAX_OBSTACULOS_VERTICAIS; i++) {
-        obstaculosVerticais[i].active = 0;
+    for (int i = 0; i < MAX_OBSTACULOS_MAGENTA; i++) {
+        obstaculosMagenta[i].active = 0;
     }
+    for (int i = 0; i < MAX_OBSTACULOS_AMARELOS; i++) {
+        obstaculosAmarelos[i].active = 0;
+    }
+
     contadorObstaculos = 0;
     int jogando = 1;
+
     screenClear();
     desenharPersonagemASCII();
+
     while (jogando && health > 0) {
-        // Verifica se deve mudar para a segunda fase
-        if (score >= 100 && faseAtual == 1) {
+        // Verificar transições de fase
+        if (score >= PONTOS_FASE2 && faseAtual == 1) {
             faseAtual = 2;
             mudarParaSegundaFase();
         }
-
-        // Desenha o boss fixo na parte superior se estiver na segunda fase
-        if (faseAtual == 2) {
-            desenharBossFixo();
+        if (score >= PONTOS_FASE3 && faseAtual == 2) {
+            faseAtual = 3;
+            mudarParaTerceiraFase();
+        }
+        if (score >= PONTOS_FIM_JOGO && faseAtual == 3) {
+            finalizarJogo(score);
+            break;
         }
 
         // Controle de movimento do jogador
@@ -422,47 +503,63 @@ void iniciarJogo(Mix_Music *bgMusic) {
             }
         }
 
+        // Limpa a área do jogo primeiro
+        limparAreaJogo();
+
         // Atualiza o estado do jogo
         moverCoracao(upPressed, downPressed, leftPressed, rightPressed);
+        if (detectarColisao()) {
+            if (health <= 0) {
+                jogando = 0;
+                break;
+            }
+        }
         atualizarOssos();
-        atualizarObstaculosVerticais();
+        atualizarObstaculosMagenta();
+        atualizarObstaculosAmarelos();
         gerarObstaculos();
-        limparAreaJogo();
+        gerarObstaculosMagenta();
+        gerarObstaculosAmarelos();
+
         desenharAreaComCoracao();
 
-        // Atualiza a pontuação e tela
+        // Indicadores visuais para a terceira fase
+        desenharIndicadoresTerceiraFase();
+
+        // Atualiza a pontuação e a tela
         screenUpdate();
-        score++; // Aumenta a pontuação a cada ciclo do jogo
+        score++;
         usleep(30000);
     }
+
     // Parar a música e liberar recursos após o término do jogo
     Mix_HaltMusic();
     Mix_FreeMusic(bgMusic);
-    finalizarJogo(score); // Salvar a pontuação após o jogo
+    finalizarJogo(score);
 }
 
-// Função para finalizar o jogo
-void finalizarJogo(int pontuacaoAtual) {
+void morte(int pontuacaoAtual) {
     salvarMaiorPontuacao(pontuacaoAtual);
     screenSetColor(RED, BLACK);
     screenClear();
     const char *gameOverMessage[] = {
         "*****************************************",
         "*                                       *",
-        "*         A última centelha             *",
+        "*   A última centelha se apagou no vazio*",
         "*                                       *",
-        "*     se apagou no vazio...             *",
+        "* 'Mesmo nas trevas, a luz pode         *",
+        "*  renascer.'                           *",
         "*                                       *",
-        "*     Talvez haja um novo começo.       *",
+        "*   Tente novamente, não desista.       *",
         "*                                       *",
         "*****************************************"
     };
-    
+
     int messageLines = sizeof(gameOverMessage) / sizeof(gameOverMessage[0]);
-    int startY = (AREA_FIM_Y - AREA_INICIO_Y + 1 - messageLines) / 2 + AREA_INICIO_Y; // Calcula a posição vertical
+    int startY = (AREA_FIM_Y - AREA_INICIO_Y + 1 - messageLines) / 2 + AREA_INICIO_Y;
     int screenWidth = AREA_FIM_X - AREA_INICIO_X + 1;
     int messageWidth = strlen(gameOverMessage[0]);
-    int startX = (screenWidth - messageWidth) / 2 + AREA_INICIO_X; // Calcula a posição horizontal
+    int startX = (screenWidth - messageWidth) / 2 + AREA_INICIO_X;
 
     for (int i = 0; i < messageLines; i++) {
         screenGotoxy(startX, startY + i);
@@ -470,86 +567,48 @@ void finalizarJogo(int pontuacaoAtual) {
     }
 
     screenUpdate();
-    sleep(2);
+    sleep(3);
 }
 
-
 void mostrarTransicaoParaSegundaFase() {
-
     Mix_PauseMusic();
-    // Define a cor e limpa a tela
     screenSetColor(RED, DARKGRAY);
     screenClear();
 
-    // Desenha a imagem ASCII na tela
-    screenGotoxy(15, 1);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 2);
-    printf("⠀⠀⠀⠋⠛⢻⡟⠋⠉⠁⠀⠀⠀⠀⠀⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡄⠀⣿⡇⠀⠀⠜⠀⠀⠀⠀⠀⠀⢹⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 3);
-    printf("⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⢘⠀⠀⠀⠀⠀⣤⠀⠀⠀⢸⠀⠀⣄⠀⠀⠀⠆⠀⠀⠀⠀⠀⠀⢈⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 4);
-    printf("⠀⠀⠀⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠇⠀⠀⠀⠀⣗⠀⠀⠀⠸⠀⠀⣿⠀⠀⠀⠇⠀⠀⠀⠀⠀⠀⢐⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 5);
-    printf("⠀⢤⣀⣀⡀⣐⣇⣤⣤⡀⠀⠀⠀⠀⠀⠀⠳⣀⣀⡠⠃⠣⠄⠔⠃⠀⠀⣧⠀⠀⠀⡆⠀⠀⠀⠀⠀⠀⢱⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 6);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠀⠀⠀⠓⠀⠁⠉⠀⠀⠀⠋⠉⠀⠁⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 7);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 8);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⣉⠀⠀⠀⢀⡔⠁⠀⠀⣠⠤⣤⡄⣤⣦⠔⠒⠀⠀⠀⣶⠀⠀⠀⠀⠀⠀⠀⠀⡤⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 9);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⣏⡀⠀⣠⠟⠁⠀⠀⠀⠈⠉⠀⠙⡟⠁⠀⠀⠀⠀⠀⡧⠃⠀⠀⠀⠀⠀⠀⠀⠅⣮⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 10);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠧⡇⡞⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠽⠀⠀⠀⠀⠀⠀⠀⡟⠄⠀⠀⠀⠀⠀⠀⠀⠊⣃⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 11);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⡟⠟⡗⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠗⠀⠀⠀⠀⠀⠀⠀⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠄⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 12);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⡋⠀⠀⢭⢧⠀⠀⠀⠀⠀⠀⠀⠀⡯⡆⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⢈⣗⠀⢀⢀⡠⠀⣀⠂⢀⠀");
-    screenGotoxy(15, 13);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⢀⠇⠀⠀⠈⠁⠷⠀⠀⠤⠤⠞⠒⠊⠚⠛⠗⠓⠀⠀⠦⠿⠿⠟⠟⠷⠆⠀⠀⠙⣷⠷⠛⡺⠍⠣⠕⠁⠀⠀⠀⠀");
-    screenGotoxy(15, 14);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 15);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 16);
-    printf("⠀⠀⠀⠀⠀⠀⢹⠇⡀⠀⠀⠀⠀⠀⣮⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠀⠀⠀⠀⠀⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 17);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠰⢎⡅⠀⠀⢀⡞⠀⠀⠀⠀⠠⡶⠢⠋⠂⠁⠃⢧⡂⠀⠀⠀⢼⡅⠀⠀⠀⠀⠀⣏⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 18);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠉⡢⡀⢠⣭⠀⠀⠀⠀⠌⡕⠁⠀⠀⠀⠀⠀⠀⠀⠑⡀⠀⠘⡎⠁⠀⠀⠀⠀⢿⢂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 19);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠨⠗⣷⠃⠀⠀⠀⠀⡢⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⠀⠀⡿⡅⠀⠀⠀⠀⢐⠆⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 20);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⣟⠇⠀⠀⠀⠀⠪⡈⠀⠀⠀⠀⠀⠀⠀⠀⠀⣭⠂⠀⠚⣃⠀⠀⠀⠀⡊⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 21);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠈⣣⠀⠀⠀⠀⠀⠀⢭⠂⡀⠀⠀⠀⠀⠀⠀⢁⠳⠀⠀⢫⡣⡀⠀⠀⡐⢝⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 22);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣓⠂⠀⠀⠀⠀⠀⠀⠆⣧⣆⡀⡀⠂⢀⡤⠀⠁⠀⠠⢳⣤⣠⠀⡝⡭⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 23);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡔⡿⡀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠂⠘⠋⠁⠀⠀⠀⠀⠀⠈⠑⠌⡀⡤⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-    screenGotoxy(15, 24);
-    printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+    const char *mensagem[] = {
+        "*****************************************",
+        "*                                       *",
+        "*  'Mesmo na escuridão, uma centelha    *",
+        "*   pode acender a chama da esperança.' *",
+        "*                                       *",
+        "*   Continue avançando, coração valente.*",
+        "*                                       *",
+        "*****************************************"
+    };
 
-    // Atualiza a tela para exibir a imagem
+    int messageLines = sizeof(mensagem) / sizeof(mensagem[0]);
+    int startY = (AREA_FIM_Y - AREA_INICIO_Y + 1 - messageLines) / 2 + AREA_INICIO_Y;
+    int screenWidth = AREA_FIM_X - AREA_INICIO_X + 1;
+    int messageWidth = strlen(mensagem[0]);
+    int startX = (screenWidth - messageWidth) / 2 + AREA_INICIO_X;
+
+    for (int i = 0; i < messageLines; i++) {
+        screenGotoxy(startX, startY + i);
+        printf("%s", mensagem[i]);
+    }
+
     screenUpdate();
+    sleep(3);
 
-    // Pausa de 3 segundos
-    sleep(2);
-
-    // retornando a musica
     Mix_ResumeMusic();
-
-    // Limpa a tela após a pausa
     screenClear();
 }
 
 void desenharBossFixo() {
     screenSetColor(WHITE, BLACK);
 
-    int startX = (AREA_FIM_X + AREA_INICIO_X) / 2 - 16; // Centraliza horizontalmente fora da área de jogo
-    int startY = AREA_INICIO_Y - 15; // Coloca acima da área de jogo
-
+    int startX = (AREA_FIM_X + AREA_INICIO_X) / 2 - 16;
+    int startY = AREA_INICIO_Y - 15;
 
     screenGotoxy(startX, startY);
     printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠏⠙⠋⠉⠛⠛⠛⢿⣿⣿⣿⣿⣿⣿⣿⣿");
@@ -558,11 +617,11 @@ void desenharBossFixo() {
     screenGotoxy(startX, startY + 2);
     printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⢠⣾⣿⣿⡷⠒⣾⣿⣿⣿⣿⡄⢿⣿⣿⣿⣿⣿");
     screenGotoxy(startX, startY + 3);
-    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⣾⣿⣿⡿⣃⣼⣿⠿⣿⣿⣿⡇⣼⣿⣿⣿⣿⣿");
+    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⣾⣿⣿⡿⣃⣼⣿⠿⣿⣿⣿⡇⣼⣿⣿⣿⣿⣿");
     screenGotoxy(startX, startY + 4);
-    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠉⠉⠁⠀⠛⠉⢙⠁⠀⠀⠀⠠⣿⣿⣿⣿⣿⣿");
+    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠉⠉⠁⠀⠛⠉⢙⠁⠀⠀⠀⠠⣿⣿⣿⣿⣿⣿");
     screenGotoxy(startX, startY + 5);
-    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⣄⡀⠤⣂⣀⢀⡘⠺⠦⣄⣠⡤⣿⣿⣿⣿⣿⣿");
+    printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⣄⡀⠤⣂⣀⢀⡘⠺⠦⣄⣠⡤⣿⣿⣿⣿⣿⣿");
     screenGotoxy(startX, startY + 6);
     printf("⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡅⠈⡲⠄⠀⡖⠋⠙⠒⣾⠎⠇⢿⣿⣿⣿⣿⣿");
     screenGotoxy(startX, startY + 7);
@@ -581,27 +640,163 @@ void desenharBossFixo() {
     printf("⣿⡿⠛⠛⠉⠂⠀⠀⠀⢀⡂⠓⠄⠀⠈⠉⠗⣉⠈⠁⠂⠀⠀⠈⠁⠀⠀⠀⠀⠀");
     screenGotoxy(startX, startY + 14);
     printf("⣿⡀⠀⠈⠆⠀⠀⠀⠀⠀⠉⠘⠐⠿⠿⠁⠀⠘⠃⠤⠤⠀⠀⠀⠀⠀⠀⠀⠀⠀");
-   
+
     screenUpdate();
 }
-
 
 void mudarParaSegundaFase() {
     jogoPausado = 1;
     Mix_PauseMusic();
 
     screenClear();
-    mostrarTransicaoParaSegundaFase(); // Mostra a transição de fase
+    mostrarTransicaoParaSegundaFase();
 
-    desenharBossFixo(); // Exibe o boss fixo na parte superior uma única vez
+    desenharBossFixo();
 
     jogoPausado = 0;
     Mix_ResumeMusic();
 
-    velocidadeObstaculos = 10;   // Ajuste a dificuldade da fase
+    velocidadeObstaculos = 15;
 
     screenSetColor(YELLOW, DARKGRAY);
     screenGotoxy(AREA_INICIO_X, AREA_INICIO_Y - 2);
+}
+
+void mudarParaTerceiraFase() {
+    Mix_PauseMusic();
+    screenSetColor(YELLOW, DARKGRAY);
+    screenClear();
+    mostrarTransicaoParaTerceiraFase();
+
+    velocidadeObstaculos = 12;
+    Mix_ResumeMusic();
+
+    // Limita o número de obstáculos roxos ativos
+    for (int i = 0; i < MAX_OBSTACULOS_MAGENTA; i++) {
+        obstaculosMagenta[i].active = 0;
+    }
+
+    screenSetColor(YELLOW, DARKGRAY);
+    screenGotoxy(AREA_INICIO_X, AREA_INICIO_Y - 2);
+}
+
+void desenharIndicadoresTerceiraFase() {
+    if (faseAtual == 3) {
+        screenSetColor(LIGHTMAGENTA, BLACK);
+        screenGotoxy(AREA_INICIO_X + 5, AREA_INICIO_Y - 1);
+        printf("=== Último Desafio ===");
+    }
+}
+
+void mostrarTransicaoParaTerceiraFase() {
+    Mix_PauseMusic();
+    screenSetColor(RED, DARKGRAY);
+    screenClear();
+
+    const char *mensagem[] = {
+        "*****************************************",
+        "*                                       *",
+        "* 'Os maiores desafios guardam as mais  *",
+        "*  preciosas recompensas.'              *",
+        "*                                       *",
+        "*  A jornada quase termina, não desista!*",
+        "*                                       *",
+        "*****************************************"
+    };
+
+    int messageLines = sizeof(mensagem) / sizeof(mensagem[0]);
+    int startY = (AREA_FIM_Y - AREA_INICIO_Y + 1 - messageLines) / 2 + AREA_INICIO_Y;
+    int screenWidth = AREA_FIM_X - AREA_INICIO_X + 1;
+    int messageWidth = strlen(mensagem[0]);
+    int startX = (screenWidth - messageWidth) / 2 + AREA_INICIO_X;
+
+    for (int i = 0; i < messageLines; i++) {
+        screenGotoxy(startX, startY + i);
+        printf("%s", mensagem[i]);
+    }
+
+    screenUpdate();
+    sleep(3);
+
+    Mix_ResumeMusic();
+    screenClear();
+}
+
+void gerarObstaculosMagenta() {
+    static int contadorFase3 = 0;
+    contadorFase3++;
+
+    int frequencia = (faseAtual == 3) ? 25 : 30;
+
+    if (contadorFase3 >= frequencia) {
+        contadorFase3 = 0;
+        for (int i = 0; i < MAX_OBSTACULOS_MAGENTA; i++) {
+            if (!obstaculosMagenta[i].active) {
+                obstaculosMagenta[i].active = 1;
+                obstaculosMagenta[i].x = AREA_FIM_X - 1;
+                obstaculosMagenta[i].y = (rand() % (AREA_FIM_Y - AREA_INICIO_Y - 4)) + AREA_INICIO_Y + 2;
+                obstaculosMagenta[i].comprimento = rand() % 3 + 2;
+                break;
+            }
+        }
+    }
+}
+
+void atualizarObstaculosMagenta() {
+    for (int i = 0; i < MAX_OBSTACULOS_MAGENTA; i++) {
+        if (obstaculosMagenta[i].active) {
+            for (int j = 0; j < obstaculosMagenta[i].comprimento; j++) {
+                screenGotoxy(obstaculosMagenta[i].x, obstaculosMagenta[i].y + j);
+                printf(" ");
+            }
+
+            obstaculosMagenta[i].x -= 1;
+
+            if (obstaculosMagenta[i].x < AREA_INICIO_X + 1) {
+                obstaculosMagenta[i].active = 0;
+            } else {
+                screenSetColor(DARK_PURPLE, BLACK);
+                for (int j = 0; j < obstaculosMagenta[i].comprimento; j++) {
+                    screenGotoxy(obstaculosMagenta[i].x, obstaculosMagenta[i].y + j);
+                    printf("|");
+                }
+            }
+        }
+    }
+}
+
+void finalizarJogo(int pontuacaoAtual) {
+    salvarMaiorPontuacao(pontuacaoAtual);
+    screenSetColor(RED, BLACK);
+    screenClear();
+    if (pontuacaoAtual >= PONTOS_FIM_JOGO) {
+        const char *vitoriaMessage[] = {
+            "*****************************************",
+            "*                                       *",
+            "*   O coração voltou a sentir plenamente!*",
+            "*                                       *",
+            "* 'As emoções foram recuperadas, e a    *",
+            "*  alma perdida encontrou seu caminho.' *",
+            "*                                       *",
+            "*     Obrigado por jogar!               *",
+            "*                                       *",
+            "*****************************************"
+        };
+        int messageLines = sizeof(vitoriaMessage) / sizeof(vitoriaMessage[0]);
+        int startY = (AREA_FIM_Y - AREA_INICIO_Y + 1 - messageLines) / 2 + AREA_INICIO_Y;
+        int screenWidth = AREA_FIM_X - AREA_INICIO_X + 1;
+        int messageWidth = strlen(vitoriaMessage[0]);
+        int startX = (screenWidth - messageWidth) / 2 + AREA_INICIO_X;
+        for (int i = 0; i < messageLines; i++) {
+            screenGotoxy(startX, startY + i);
+            printf("%s", vitoriaMessage[i]);
+        }
+        screenUpdate();
+        sleep(3);
+    } else {
+        morte(pontuacaoAtual);
+    }
+    mostrarMenuPrincipal();
 }
 
 int main() {
@@ -609,13 +804,13 @@ int main() {
     screenInit(1);
     keyboardInit();
     timerInit(50);
+    srand(time(NULL));
 
-    // Inicializa SDL2 para áudio com um buffer maior para reduzir travamentos
     if (SDL_Init(SDL_INIT_AUDIO) < 0) {
         fprintf(stderr, "Erro ao inicializar SDL: %s\n", SDL_GetError());
         return 1;
     }
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096) < 0) {  // Aumentei o buffer para 4096
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096) < 0) {
         fprintf(stderr, "Erro ao inicializar SDL_mixer: %s\n", Mix_GetError());
         return 1;
     }
@@ -632,8 +827,8 @@ int main() {
                     fprintf(stderr, "Erro ao carregar música: %s\n", Mix_GetError());
                     return 1;
                 }
-                Mix_VolumeMusic(32);  // Reduz o volume da música para 50%
-                Mix_PlayMusic(bgMusic, -1); // Inicia a música em loop
+                Mix_VolumeMusic(32);
+                Mix_PlayMusic(bgMusic, -1);
                 screenClear();
                 iniciarJogo(bgMusic);
                 mostrarMenuPrincipal();
@@ -649,7 +844,6 @@ int main() {
         }
     }
 
-    // Finalizar SDL2 e liberar recursos
     Mix_CloseAudio();
     SDL_Quit();
     keyboardDestroy();

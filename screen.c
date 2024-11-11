@@ -68,20 +68,24 @@ void screenGotoxy(int x, int y)
 
 void screenSetColor(screenColor fg, screenColor bg)
 {
-    char atr[] = "[0;";
+    // Verifica primeiro se a cor é DARK_PURPLE ou WINE_RED
+    if (fg == DARK_PURPLE) {
+        printf("%s[38;5;55m", ESC);  // Código ANSI para DARK_PURPLE
+        return;
+    }
+    else if (fg == WINE_RED) {
+        printf("%s[38;5;88m", ESC);  // Código ANSI para WINE_RED
+        return;
+    }
 
-    if ( fg > LIGHTGRAY )
+    // Agora, verifica se a cor é brilhante
+    char atr[] = "[0;";
+    if (fg > LIGHTGRAY)
     {
         atr[1] = '1';  // Ativa negrito para cores brilhantes
         fg -= 8;
     }
 
-    // Verifica se a cor é DARK_PURPLE ou WINE_RED
-    if (fg == WINE_RED) {
-        printf("%s[38;5;88m", ESC);  // Usando o código ANSI para Wine Red (vermelho vinho)
-    } else if (fg == DARK_PURPLE) {
-        printf("%s[38;5;55m", ESC);  // Usando um código ANSI confiável para DARK_PURPLE
-    } else {
-        printf("%s%s%d;%dm", ESC, atr, fg + 30, bg + 40);
-    }
+    // Define a cor padrão
+    printf("%s%s%d;%dm", ESC, atr, fg + 30, bg + 40);
 }
