@@ -63,7 +63,7 @@ typedef struct {
     int comprimento;
 } ObstaculoAmarelo;
 
-#define MAX_OBSTACULOS_AMARELOS 5
+#define MAX_OBSTACULOS_AMARELOS 2
 ObstaculoAmarelo obstaculosAmarelos[MAX_OBSTACULOS_AMARELOS];
 
 // Declarações de funções
@@ -327,7 +327,7 @@ void desenharOssos() {
             screenSetColor(YELLOW, BLACK);
             for (int j = 0; j < obstaculosAmarelos[i].comprimento; j++) {
                 screenGotoxy(obstaculosAmarelos[i].x, obstaculosAmarelos[i].y + j);
-                printf("$");
+                printf("💖");
             }
         }
     }
@@ -416,7 +416,7 @@ int detectarColisao() {
             for (int j = 0; j < obstaculosAmarelos[i].comprimento; j++) {
                 if (obstaculosAmarelos[i].x == coracaoX && obstaculosAmarelos[i].y + j == coracaoY) {
                     obstaculosAmarelos[i].active = 0;
-                    health += 40;
+                    health += 20;
                     if (health > 200) health = 200;
                     return 1;
                 }
@@ -471,7 +471,7 @@ void atualizarObstaculosAmarelos() {
                 screenSetColor(YELLOW, BLACK);
                 for (int j = 0; j < obstaculosAmarelos[i].comprimento; j++) {
                     screenGotoxy(obstaculosAmarelos[i].x, obstaculosAmarelos[i].y + j);
-                    printf("$");
+                    printf("💖");
                 }
             }
         }
