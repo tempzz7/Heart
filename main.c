@@ -547,7 +547,7 @@ void iniciarJogo(Mix_Music *bgMusic, No *pontuacoes) {
         // Atualiza a pontuação e a tela
         screenUpdate();
         score++;
-        usleep(30000);
+        usleep(26000);
     }
     // Parar a música e liberar recursos após o término do jogo
     Mix_HaltMusic();
@@ -673,7 +673,7 @@ void mudarParaSegundaFase() {
     jogoPausado = 0;
     Mix_ResumeMusic();
 
-    velocidadeObstaculos = 15;
+    velocidadeObstaculos = 13;
 
     screenSetColor(YELLOW, DARKGRAY);
     screenGotoxy(AREA_INICIO_X, AREA_INICIO_Y - 2);
@@ -685,7 +685,7 @@ void mudarParaTerceiraFase() {
     screenClear();
     mostrarTransicaoParaTerceiraFase();
 
-    velocidadeObstaculos = 12;
+    velocidadeObstaculos = 10;
     Mix_ResumeMusic();
 
     // Limita o número de obstáculos roxos ativos
