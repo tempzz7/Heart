@@ -83,10 +83,8 @@
     void desenharPersonagemASCII();
     void limparAreaJogo();
     void mudarParaSegundaFase();
-    void mostrarTransicaoParaSegundaFase();
     void desenharBossFixo();
     void mudarParaTerceiraFase();
-    void mostrarTransicaoParaTerceiraFase();
     void atualizarObstaculosMagenta();
     void gerarObstaculosMagenta();
     void desenharIndicadoresTerceiraFase();
@@ -402,7 +400,7 @@
                     if (obstaculosMagenta[i].x == coracaoX && obstaculosMagenta[i].y + j == coracaoY) {
                         if (playerMoving) {
                             obstaculosMagenta[i].active = 0;
-                            health -= 30;
+                            health -= 20;
                             return 1;
                         }
                     }
@@ -616,41 +614,6 @@
         screenUpdate();
     }
 
-
-    void mostrarTransicaoParaSegundaFase() {
-        Mix_PauseMusic();
-        screenSetColor(RED, DARKGRAY);
-        screenClear();
-
-        const char *mensagem[] = {
-            "*****************************************",
-            "*                                       *",
-            "*  'Mesmo na escuridão, uma centelha    *",
-            "*   pode acender a chama da esperança.' *",
-            "*                                       *",
-            "*   Continue avançando, coração valente.*",
-            "*                                       *",
-            "*****************************************"
-        };
-
-        int messageLines = sizeof(mensagem) / sizeof(mensagem[0]);
-        int startY = (AREA_FIM_Y - AREA_INICIO_Y + 1 - messageLines) / 2 + AREA_INICIO_Y;
-        int screenWidth = AREA_FIM_X - AREA_INICIO_X + 1;
-        int messageWidth = strlen(mensagem[0]);
-        int startX = (screenWidth - messageWidth) / 2 + AREA_INICIO_X;
-
-        for (int i = 0; i < messageLines; i++) {
-            screenGotoxy(startX, startY + i);
-            printf("%s", mensagem[i]);
-        }
-
-        screenUpdate();
-        sleep(3);
-
-        Mix_ResumeMusic();
-        screenClear();
-    }
-
     void desenharBossFixo() {
         screenSetColor(WHITE, BLACK);
 
@@ -696,7 +659,6 @@
         Mix_PauseMusic();
 
         screenClear();
-        mostrarTransicaoParaSegundaFase();
 
         desenharBossFixo();
 
@@ -713,7 +675,6 @@
         Mix_PauseMusic();
         screenSetColor(YELLOW, DARKGRAY);
         screenClear();
-        mostrarTransicaoParaTerceiraFase();
 
         velocidadeObstaculos = 10;
         Mix_ResumeMusic();
@@ -734,41 +695,6 @@
             printf("=== Último Desafio ===");
         }
     }
-
-    void mostrarTransicaoParaTerceiraFase() {
-        Mix_PauseMusic();
-        screenSetColor(RED, DARKGRAY);
-        screenClear();
-
-        const char *mensagem[] = {
-            "*****************************************",
-            "*                                       *",
-            "* 'Os maiores desafios guardam as mais  *",
-            "*  preciosas recompensas.'              *",
-            "*                                       *",
-            "*  A jornada quase termina, não desista!*",
-            "*                                       *",
-            "*****************************************"
-        };
-
-        int messageLines = sizeof(mensagem) / sizeof(mensagem[0]);
-        int startY = (AREA_FIM_Y - AREA_INICIO_Y + 1 - messageLines) / 2 + AREA_INICIO_Y;
-        int screenWidth = AREA_FIM_X - AREA_INICIO_X + 1;
-        int messageWidth = strlen(mensagem[0]);
-        int startX = (screenWidth - messageWidth) / 2 + AREA_INICIO_X;
-
-        for (int i = 0; i < messageLines; i++) {
-            screenGotoxy(startX, startY + i);
-            printf("%s", mensagem[i]);
-        }
-
-        screenUpdate();
-        sleep(3);
-
-        Mix_ResumeMusic();
-        screenClear();
-    }
-
     void gerarObstaculosMagenta() {
         static int contadorFase3 = 0;
         contadorFase3++;
