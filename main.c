@@ -228,17 +228,17 @@ void mostrarMenuPrincipal(No *pontuacoes) {
     printf(" ▒ ░▒░ ░ ░ ░  ░ ▒   ▒▒ ░  ░▒ ░ ▒░    ░        ░  ░ ");
     screenGotoxy(20, 19);
     printf(" ░  ░░ ░   ░    ░   ▒     ░░   ░   ░             ░ ");
-    screenGotoxy(20, 20);
-    printf(" ░  ░  ░   ░  ░     ░  ░   ░                  ░ ");
 
     screenSetColor(LIGHTMAGENTA, DARKGRAY);
-    screenGotoxy(33, 22);
+    screenGotoxy(33, 20);
     printf("1. Iniciar");
-    screenGotoxy(33, 23);
+    screenGotoxy(33, 21);
     printf("2. Créditos");
+    screenGotoxy(33, 22);
+    printf("3. Lore");
+    screenGotoxy(33, 23);
+    printf("4. Sair");
     screenGotoxy(33, 24);
-    printf("3. Sair");
-    screenGotoxy(33, 25);
     mostrarMaiorPontuacao(pontuacoes);
 }
 
@@ -810,7 +810,7 @@ void morte(No *pontuacoes, int pontuacaoAtual) {
             printf("%s", vitoriaMessage[i]);
         }
         screenUpdate();
-        sleep(3);
+        sleep(5);
         mostrarMenuPrincipal(pontuacoes); // Após vitória, retorna ao menu
     } else {
         morte(pontuacoes, pontuacaoAtual); // Após morte, retorna ao menu direto
