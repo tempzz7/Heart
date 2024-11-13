@@ -30,6 +30,7 @@
     Mix_Music *bgMusicFase2;
     int jogoPausado = 0;
     int playerMoving = 0;
+    int maiorPontuacaoGlobal = 0;
 
 
     typedef struct No {
@@ -90,6 +91,8 @@
     void desenharIndicadoresTerceiraFase();
     void gerarObstaculosAmarelos();
     void atualizarObstaculosAmarelos();
+    void salvarMaiorPontuacao();
+
 
 
     No* criarNo(int pontuacao) {
@@ -100,10 +103,16 @@
     }
 
     void adicionarPontuacao(No **cabeca, int pontuacao) {
-        No *novoNo = criarNo(pontuacao);
-        novoNo->proximo = *cabeca;
-        *cabeca = novoNo;
+    No *novoNo = criarNo(pontuacao);
+    novoNo->proximo = *cabeca;
+    *cabeca = novoNo;
+
+    // Atualiza a maior pontuação global se a pontuação atual for maior
+    if (pontuacao > maiorPontuacaoGlobal) {
+        maiorPontuacaoGlobal = pontuacao;
+        salvarMaiorPontuacao();
     }
+}
 
     int obterMaiorPontuacao(No *cabeca) {
         int maiorPontuacao = 0;
@@ -117,29 +126,24 @@
         return maiorPontuacao;
     }
 
-    void salvarMaiorPontuacao(No *cabeca) {
-        int maiorPontuacao = obterMaiorPontuacao(cabeca);
+        void salvarMaiorPontuacao() {
         FILE *file = fopen("score.dat", "w");
         if (file != NULL) {
-            fprintf(file, "%d", maiorPontuacao);
+            fprintf(file, "%d", maiorPontuacaoGlobal);
             fclose(file);
         }
     }
-    // Função para ler a maior pontuação do arquivo
-    void mostrarMaiorPontuacao(No *pontuacoes) {
-        int maiorPontuacao = obterMaiorPontuacao(pontuacoes);
+
+        void mostrarMaiorPontuacao() {
         screenSetColor(YELLOW, DARKGRAY);
         screenGotoxy(33, 25);
-        printf("Maior Pontuação: %d", maiorPontuacao);
+        printf("Maior Pontuação: %d", maiorPontuacaoGlobal);
     }
 
-    void carregarMaiorPontuacao(No **cabeca) {
+        void carregarMaiorPontuacao() {
         FILE *file = fopen("score.dat", "r");
         if (file != NULL) {
-            int maiorPontuacao;
-            if (fscanf(file, "%d", &maiorPontuacao) == 1) {
-                adicionarPontuacao(cabeca, maiorPontuacao);
-            }
+            fscanf(file, "%d", &maiorPontuacaoGlobal);
             fclose(file);
         }
     }
