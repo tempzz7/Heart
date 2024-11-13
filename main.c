@@ -13,8 +13,8 @@
     #define AREA_FIM_X 70
     #define AREA_INICIO_Y 15
     #define AREA_FIM_Y 25
-    #define PONTOS_FASE2 2000
-    #define PONTOS_FASE3 4000
+    #define PONTOS_FASE2 200
+    #define PONTOS_FASE3 400
     #define PONTOS_FIM_JOGO 6000
 
     int menuOpcao = 0;
@@ -88,10 +88,10 @@
     void mudarParaTerceiraFase();
     void atualizarObstaculosMagenta();
     void gerarObstaculosMagenta();
-    void desenharIndicadoresTerceiraFase();
     void gerarObstaculosAmarelos();
     void atualizarObstaculosAmarelos();
     void salvarMaiorPontuacao();
+    void desenharBossTerceiraFase();
 
 
 
@@ -606,8 +606,6 @@ void mostrarMenuPrincipal(No *pontuacoes) {
             gerarObstaculosMagenta();
             gerarObstaculosAmarelos();
             desenharAreaComCoracao();
-            // Indicadores visuais para a terceira fase
-            desenharIndicadoresTerceiraFase();
             // Atualiza a pontuação e a tela
             screenUpdate();
             score++;
@@ -716,6 +714,51 @@ void morte(No *pontuacoes, int pontuacaoAtual) {
         screenGotoxy(AREA_INICIO_X, AREA_INICIO_Y - 2);
     }
 
+    void desenharBossTerceiraFase() {
+        int startX = (AREA_FIM_X + AREA_INICIO_X) / 2 - 16;  // Centraliza a largura de 48 caracteres
+        int startY = AREA_INICIO_Y - 15;  // Posição inicial da altura do boss
+
+        screenSetColor(DARKGRAY, BLACK);
+
+        // ASCII Art do Boss (48 caracteres de largura por 14 de altura)
+        screenGotoxy(startX, startY);
+        screenGotoxy(startX, startY + 1);
+        printf("⠀⠀⠀⠀⠀⠀⠀⠀⠀⣾⡇⠀⠀⠀⠀⣼⣿⣿⣿⣷⡄⠀⠀⠀⠀⠀⢀⣾⣿⣿⣿⣿⣿⣆⠀⠀⢿⡇⢠⠴⠋⠉⠑⣦⡀⠀⠀⠀⠀⠀");
+        screenGotoxy(startX, startY + 2);
+        printf("⠀⣴⠟⠓⠲⣄⡀⠀⠀⣿⠁⠀⠀⠀⣾⣿⣿⣿⣿⣿⣿⡄⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⣿⣿⡄⠀⢸⡿⠁⠀⠀⡠⠂⠈⣷⠀⠀⠀⠀⠀");
+        screenGotoxy(startX, startY + 3);
+        printf("⣰⡏⢤⡀⠀⠈⠛⣦⣄⣿⠀⠀⢀⣾⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣧⠀⠀⣇⠀⢠⠎⠀⠀⢀⣿⠀⠀⠀⠀⠀");
+        screenGotoxy(startX, startY + 4);
+        printf("⣿⠁⠀⠙⢦⣄⠀⠀⠹⡟⠀⠀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣷⠀⠀⠀⠈⣿⣿⣿⣿⣿⣿⣿⣿⣿⣆⠀⢹⣰⢿⡆⠀⢀⣾⠃⠀⠀⠀⠀⠀");
+        screenGotoxy(startX, startY + 5);
+        printf("⢻⡆⠀⠀⠀⣿⠇⠀⠀⡇⠀⢠⣿⣟⢻⡟⠛⢻⠟⢻⡿⣿⠄⠀⠀⠀⣿⣿⣻⣋⣉⣋⣠⣧⣴⣿⣦⣸⠃⢸⣿⢀⡾⠃⠀⠀⠀⠀⠀⠀");
+        screenGotoxy(startX, startY + 6);
+        printf("⠀⠻⣆⠀⠀⢿⡀⠀⠀⡇⢀⣼⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣿⣿⣿⠿⠟⠉⠀⣉⣷⣿⣷⠟⠁⠀⠀⠀⠀⠀⠀⠀");
+        screenGotoxy(startX, startY + 7);
+        printf("⠀⠀⠈⠳⣄⠈⢻⣶⣴⣧⣬⣁⣉⠙⠻⠿⠿⠿⢿⣿⣿⣿⣿⣿⣯⣀⠀⣹⣿⣿⡋⠁⠀⡠⠔⠊⠉⠉⠉⠙⠳⣦⠀⠀⠀⠀⠀⠀⠀");
+        screenGotoxy(startX, startY + 8);
+        printf("⠀⠀⠀⠀⠈⡿⠛⠉⣀⡀⠀⠀⠀⠉⠉⠒⠀⠀⢸⣿⣿⣿⣿⣿⠋⠁⢀⣼⣿⣿⣇⡀⠀⠀⠀⠀⠀⣴⣶⣦⡀⠀⠘⣧⠀⠀⠀⠀⠀⠀");
+        screenGotoxy(startX, startY + 9);
+        printf("⠀⠀⠀⠀⣸⠇⢠⣾⣿⣿⡇⠀⠀⣀⣠⣤⣤⠴⢾⣿⣿⣿⣿⣿⣷⣿⣿⣿⣿⡿⠛⠉⠻⢷⣶⣦⣤⣿⣿⣿⣷⠀⠀⢸⠀⠀⠀⠀⠀⠀");
+        screenGotoxy(startX, startY + 10);
+        printf("⠀⠀⠀⠀⣿⡄⢾⣿⣿⣿⣷⣶⣿⣿⠟⠉⠀⠀⠀⠈⠻⣿⣿⣿⣿⣿⣿⡿⠟⠀⠀⢀⣀⣤⣽⣿⣿⣿⣿⣿⠿⠀⠀⣾⠀⠀⠀⠀⠀⠀");
+        screenGotoxy(startX, startY + 11);
+        printf("⠀⠀⠀⠀⢹⣇⠈⠛⢿⣿⣿⣿⣿⣶⣶⣶⣦⣤⣤⣄⣀⡘⢿⣿⣿⣠⡤⢒⣢⣴⣾⣿⣿⣿⡿⢿⣯⣿⣿⡇⠀⠀⢰⡟⠀⠀⠀⠀⠀⠀");
+        screenGotoxy(startX, startY + 12);
+        printf("⠀⠀⠀⠀⠀⢿⡆⠀⠘⣿⣿⣟⠉⢛⠿⣿⣿⣿⣿⣿⣿⣿⣿⣾⣿⣴⣾⣿⠛⠛⣿⠋⠉⡇⢘⣿⡟⢸⠇⠀⠠⣿⡇⠀⠀⠀⠀⠀⠀");
+        screenGotoxy(startX, startY + 13);
+        printf("⠀⠀⠀⠀⠀⠈⢿⣦⠀⠹⣿⠻⣦⣸⡀⡇⠀⢰⠀⠀⡆⠀⠈⢿⣿⠉⠀⢸⡇⠀⢠⣇⠀⢸⣷⣸⡿⠁⡸⠀⠀⠀⢿⡇⠀⠀⠀⠀⠀⠀");
+        screenGotoxy(startX, startY + 14);
+        printf("⠀⠀⠀⠀⠀⠀⢸⣿⠀⠀⢻⠀⠙⣿⣿⣿⡀⣼⡄⢰⣷⣤⣦⣼⠿⢤⡴⠛⣷⡤⠻⡟⣦⣾⣿⣿⠃⠀⠀⣰⠇⠀⢸⣿⡀⠀⠀⠀⠀⠀");
+        screenGotoxy(startX, startY + 15);
+        printf("⠀⠀⠀⠀⠀⠀⢸⣿⠀⢠⡀⠇⠀⠘⢿⣿⣿⣿⣝⣶⣿⡄⠀⢻⠀⢠⡇⠀⣏⣀⣴⣷⣿⣿⣿⠃⠀⡄⢠⣿⣶⢶⣾⣿⠀");
+        screenGotoxy(startX, startY + 16);
+        printf("⠀⠀⠀⠀⠀⠀⣼⡿⠀⢸⣿⡄⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⣷⣾⣷⣾⣿⣿⣿⣿⣿⣿⣿⡿⠃⠀⣼⣿⡾⠃⠀⣰⣿⣿");
+
+        screenUpdate();
+    }
+
+
     void mudarParaTerceiraFase() {
         Mix_PauseMusic();
         screenSetColor(YELLOW, DARKGRAY);
@@ -729,17 +772,12 @@ void morte(No *pontuacoes, int pontuacaoAtual) {
             obstaculosMagenta[i].active = 0;
         }
 
+        desenharBossTerceiraFase();
+
         screenSetColor(YELLOW, DARKGRAY);
         screenGotoxy(AREA_INICIO_X, AREA_INICIO_Y - 2);
     }
 
-    void desenharIndicadoresTerceiraFase() {
-        if (faseAtual == 3) {
-            screenSetColor(LIGHTMAGENTA, BLACK);
-            screenGotoxy(AREA_INICIO_X + 5, AREA_INICIO_Y - 1);
-            printf("=== Último Desafio ===");
-        }
-    }
     void gerarObstaculosMagenta() {
         static int contadorFase3 = 0;
         contadorFase3++;
