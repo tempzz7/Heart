@@ -1,4 +1,4 @@
-    #include <string.h>
+   #include <string.h>
     #include <unistd.h>
     #include <stdlib.h>
     #include <stdio.h>
@@ -207,7 +207,6 @@ void mostrarLore() {
 }
 
 void mostrarMenuPrincipal(No *pontuacoes) {
-    // mostrarLore(); // Removido para evitar exibição da lore ao retornar ao menu
     screenSetColor(RED, DARKGRAY);
     screenClear();
     animarCoracao();
@@ -818,53 +817,58 @@ void morte(No *pontuacoes, int pontuacaoAtual) {
     screenUpdate();
 }
 
-    int main() {
-        No *pontuacoes = NULL;
-        carregarMaiorPontuacao(&pontuacoes);
-        int ch = 0;
-        screenInit(1);
-        keyboardInit();
-        timerInit(50);
-        srand(time(NULL));
-        if (SDL_Init(SDL_INIT_AUDIO) < 0) {
-            fprintf(stderr, "Erro ao inicializar SDL: %s\n", SDL_GetError());
-            return 1;
-        }
-        if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096) < 0) {
-            fprintf(stderr, "Erro ao inicializar SDL_mixer: %s\n", Mix_GetError());
-            return 1;
-        }
-        mostrarMenuPrincipal(pontuacoes);
-        screenUpdate();
-        while (jogoEmExecucao) {
-            if (keyhit()) {
-                ch = readch();
-                if (ch == '1') {
-                    Mix_Music *bgMusic = Mix_LoadMUS("background_music.mp3");
-                    if (!bgMusic) {
-                        fprintf(stderr, "Erro ao carregar música: %s\n", Mix_GetError());
-                        return 1;
-                    }
-                    Mix_VolumeMusic(32);
-                    Mix_PlayMusic(bgMusic, -1);
-                    screenClear();
-                    iniciarJogo(bgMusic, pontuacoes);
-                    mostrarMenuPrincipal(pontuacoes);
-                } else if (ch == '2') {
-                    mostrarCreditos();
-                    screenUpdate();
-                    readch();
-                    mostrarMenuPrincipal(pontuacoes);
-                } else if (ch == '3') {
-                    jogoEmExecucao = 0;
-                }
-                screenUpdate();
-            }
-        }
-        Mix_CloseAudio();
-        SDL_Quit();
-        keyboardDestroy();
-        screenDestroy();
-        timerDestroy();
-        return 0;
+int main() {
+    No *pontuacoes = NULL;
+    carregarMaiorPontuacao(&pontuacoes);
+    int ch = 0;
+    screenInit(1);
+    keyboardInit();
+    timerInit(50);
+    srand(time(NULL));
+    if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+        fprintf(stderr, "Erro ao inicializar SDL: %s\n", SDL_GetError());
+        return 1;
     }
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096) < 0) {
+        fprintf(stderr, "Erro ao inicializar SDL_mixer: %s\n", Mix_GetError());
+        return 1;
+    }
+    mostrarMenuPrincipal(pontuacoes);
+    screenUpdate();
+    while (jogoEmExecucao) {
+        if (keyhit()) {
+            ch = readch();
+            if (ch == '1') {
+                Mix_Music *bgMusic = Mix_LoadMUS("background_music.mp3");
+                if (!bgMusic) {
+                    fprintf(stderr, "Erro ao carregar música: %s\n", Mix_GetError());
+                    return 1;
+                }
+                Mix_VolumeMusic(32);
+                Mix_PlayMusic(bgMusic, -1);
+                screenClear();
+                iniciarJogo(bgMusic, pontuacoes);
+                mostrarMenuPrincipal(pontuacoes);
+            } else if (ch == '2') {
+                mostrarCreditos();
+                screenUpdate();
+                readch();
+                mostrarMenuPrincipal(pontuacoes);
+            } else if (ch == '3') {
+                mostrarLore();
+                screenUpdate();
+                readch();
+                mostrarMenuPrincipal(pontuacoes);
+            } else if (ch == '4') {
+                jogoEmExecucao = 0;
+            }
+            screenUpdate();
+        }
+    }
+    Mix_CloseAudio();
+    SDL_Quit();
+    keyboardDestroy();
+    screenDestroy();
+    timerDestroy();
+    return 0;
+}
