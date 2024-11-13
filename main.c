@@ -144,40 +144,103 @@
         }
     }
 
-    void mostrarMenuPrincipal(No *pontuacoes) {
-        screenSetColor(RED, DARKGRAY);
-        screenClear();
-        animarCoracao();
+void mostrarLore() {
+    // Configura as cores de fundo e texto
+    screenSetColor(BLACK, DARKGRAY);
+    screenClear();
 
-        screenGotoxy(20, 12);
-        printf("██░ ██ ▓█████ ▄▄▄       ██▀███  ▄▄▄█████▓    ▐██▌ ");
-        screenGotoxy(20, 13);
-        printf("▓██░ ██▒▓█   ▀▒████▄    ▓██ ▒ ██▒▓  ██▒ ▓▒    ▐██▌ ");
-        screenGotoxy(20, 14);
-        printf("▒██▀▀██░▒███  ▒██  ▀█▄  ▓██ ░▄█ ▒▒ ▓██░ ▒░    ▐██▌ ");
-        screenGotoxy(20, 15);
-        printf("░▓█ ░██ ▒▓█  ▄░██▄▄▄▄██ ▒██▀▀█▄  ░ ▓██▓ ░     ▓██▒ ");
-        screenGotoxy(20, 16);
-        printf("░▓█▒░██▓░▒████▒▓█   ▓██▒░██▓ ▒██▒  ▒██▒ ░     ▒▄▄ ");
-        screenGotoxy(20, 17);
-        printf(" ▒ ░░▒░▒░░ ▒░ ░▒▒   ▓▒█░░ ▒▓ ░▒▓░  ▒ ░░       ░▀▀▒ ");
-        screenGotoxy(20, 18);
-        printf(" ▒ ░▒░ ░ ░ ░  ░ ▒   ▒▒ ░  ░▒ ░ ▒░    ░        ░  ░ ");
-        screenGotoxy(20, 19);
-        printf(" ░  ░░ ░   ░    ░   ▒     ░░   ░   ░             ░ ");
-        screenGotoxy(20, 20);
-        printf(" ░  ░  ░   ░  ░     ░  ░   ░                  ░ ");
+    // Texto do lore com bordas em ASCII
+    const char *loreText[] = {
+        "╔═════════════════════════════════════════════════════════╗",
+        "║                                                         ║",
+        "║   Em um mundo onde a luz se apagou,                     ║",
+        "║   você é a última centelha de um                        ║",
+        "║   coração que já foi cheio de vida.                     ║",
+        "║                                                         ║",
+        "║   Preso em uma dimensão entre o vazio                   ║",
+        "║   e a esperança, você enfrenta os                       ║",
+        "║   ecos sombrios dos medos e                             ║",
+        "║   arrependimentos de uma alma perdida.                  ║",
+        "║                                                         ║",
+        "║   Cada passo que você dá, cada                          ║",
+        "║   obstáculo que supera, é uma luta                      ║",
+        "║   para recuperar fragmentos de                          ║",
+        "║   sentimentos e memórias esquecidas.                    ║",
+        "║                                                         ║",
+        "║   Mas cuidado, pois se o HP do                          ║",
+        "║   coração chegar a zero, ele se                         ║",
+        "║   despedaçará, e toda esperança será                    ║",
+        "║   perdida para sempre.                                  ║",
+        "║                                                         ║",
+        "║   Você não está apenas jogando, está                    ║",
+        "║   lutando para salvar o que resta de                    ║",
+        "║   uma alma à beira do esquecimento.                     ║",
+        "║                                                         ║",
+        "╚═════════════════════════════════════════════════════════╝",
+    };
 
-        screenSetColor(LIGHTMAGENTA, DARKGRAY);
-        screenGotoxy(33, 22);
-        printf("1. Iniciar");
-        screenGotoxy(33, 23);
-        printf("2. Créditos");
-        screenGotoxy(33, 24);
-        printf("3. Sair");
-        screenGotoxy(33, 25);
-        mostrarMaiorPontuacao(pontuacoes);
+    const char *pressKeyText = "╔═════════════════════════════════════════════════════════╗\n"
+                               " ║ Pressione qualquer tecla para continuar                 ║\n"
+                               " ╚═════════════════════════════════════════════════════════╝";
+
+    int loreLines = sizeof(loreText) / sizeof(loreText[0]);
+    
+    // Calcula posições centralizadas
+    int startY = (AREA_FIM_Y - AREA_INICIO_Y + 1 - loreLines) / 2 + AREA_INICIO_Y;
+    int screenWidth = AREA_FIM_X - AREA_INICIO_X + 1;
+    int loreWidth = strlen(loreText[0]);
+    int startX = (screenWidth - loreWidth) / 2 + AREA_INICIO_X;
+
+    // Renderiza o texto linha por linha
+    for (int i = 0; i < loreLines; i++) {
+        screenGotoxy(startX, startY + i);
+        printf("%s", loreText[i]);
     }
+
+    // Exibe o aviso de "Pressione qualquer tecla para continuar" abaixo do texto principal
+    screenGotoxy(startX, startY + loreLines + 1); // Posiciona logo abaixo do lore
+    printf("%s", pressKeyText);
+
+    // Atualiza a tela e espera a entrada do usuário
+    screenUpdate();
+    readch(); // Aguarda o usuário pressionar uma tecla para continuar
+}
+
+void mostrarMenuPrincipal(No *pontuacoes) {
+    // mostrarLore(); // Removido para evitar exibição da lore ao retornar ao menu
+    screenSetColor(RED, DARKGRAY);
+    screenClear();
+    animarCoracao();
+
+    screenGotoxy(20, 12);
+    printf("██░ ██ ▓█████ ▄▄▄       ██▀███  ▄▄▄█████▓    ▐██▌ ");
+    screenGotoxy(20, 13);
+    printf("▓██░ ██▒▓█   ▀▒████▄    ▓██ ▒ ██▒▓  ██▒ ▓▒    ▐██▌ ");
+    screenGotoxy(20, 14);
+    printf("▒██▀▀██░▒███  ▒██  ▀█▄  ▓██ ░▄█ ▒▒ ▓██░ ▒░    ▐██▌ ");
+    screenGotoxy(20, 15);
+    printf("░▓█ ░██ ▒▓█  ▄░██▄▄▄▄██ ▒██▀▀█▄  ░ ▓██▓ ░     ▓██▒ ");
+    screenGotoxy(20, 16);
+    printf("░▓█▒░██▓░▒████▒▓█   ▓██▒░██▓ ▒██▒  ▒██▒ ░     ▒▄▄ ");
+    screenGotoxy(20, 17);
+    printf(" ▒ ░░▒░▒░░ ▒░ ░▒▒   ▓▒█░░ ▒▓ ░▒▓░  ▒ ░░       ░▀▀▒ ");
+    screenGotoxy(20, 18);
+    printf(" ▒ ░▒░ ░ ░ ░  ░ ▒   ▒▒ ░  ░▒ ░ ▒░    ░        ░  ░ ");
+    screenGotoxy(20, 19);
+    printf(" ░  ░░ ░   ░    ░   ▒     ░░   ░   ░             ░ ");
+    screenGotoxy(20, 20);
+    printf(" ░  ░  ░   ░  ░     ░  ░   ░                  ░ ");
+
+    screenSetColor(LIGHTMAGENTA, DARKGRAY);
+    screenGotoxy(33, 22);
+    printf("1. Iniciar");
+    screenGotoxy(33, 23);
+    printf("2. Créditos");
+    screenGotoxy(33, 24);
+    printf("3. Sair");
+    screenGotoxy(33, 25);
+    mostrarMaiorPontuacao(pontuacoes);
+}
 
     void mostrarCreditos() {
         screenSetColor(LIGHTMAGENTA, DARKGRAY);
@@ -553,69 +616,47 @@
         finalizarJogo(pontuacoes, score);
     }
 
-    void morte(No *pontuacoes, int pontuacaoAtual) {
-        adicionarPontuacao(&pontuacoes, pontuacaoAtual);
-        salvarMaiorPontuacao(pontuacoes);
-        
-        // Mostra a maior pontuação imediatamente após a morte
-        mostrarMaiorPontuacao(pontuacoes);
-        screenUpdate();
-        
-        screenSetColor(RED, BLACK);
-        screenClear();
-        const char *gameOverMessage[] = {
-            "*****************************************",
-            "*                                       *",
-            "*   A última centelha se apagou no vazio*",
-            "*                                       *",
-            "* 'Mesmo nas trevas, a luz pode         *",
-            "*  renascer.'                           *",
-            "*                                       *",
-            "*   Tente novamente, não desista.       *",
-            "*                                       *",
-            "*****************************************"
-        };
-        int messageLines = sizeof(gameOverMessage) / sizeof(gameOverMessage[0]);
-        int startY = (AREA_FIM_Y - AREA_INICIO_Y + 1 - messageLines) / 2 + AREA_INICIO_Y;
-        int screenWidth = AREA_FIM_X - AREA_INICIO_X + 1;
-        int messageWidth = strlen(gameOverMessage[0]);
-        int startX = (screenWidth - messageWidth) / 2 + AREA_INICIO_X;
-        for (int i = 0; i < messageLines; i++) {
-            screenGotoxy(startX, startY + i);
-            printf("%s", gameOverMessage[i]);
-        }
-        screenUpdate();
-        sleep(3);
+void morte(No *pontuacoes, int pontuacaoAtual) {
+    adicionarPontuacao(&pontuacoes, pontuacaoAtual);
+    salvarMaiorPontuacao(pontuacoes);
+    mostrarMaiorPontuacao(pontuacoes);
+    screenUpdate();
 
-        // Reinicia o jogo completamente
-        health = 200;                 // Reiniciar saúde
-        score = 0;                    // Reiniciar pontuação
-        faseAtual = 1;                // Reiniciar fase
-        coracaoX = AREA_INICIO_X + 3; // Resetar posição do coração
-        coracaoY = AREA_FIM_Y - 2;
+    screenSetColor(BLACK, DARKGRAY);
+    screenClear();
 
-        // Resetar estado dos obstáculos
-        for (int i = 0; i < MAX_OBSTACULOS; i++) {
-            ossos[i].active = 0;
-        }
-        for (int i = 0; i < MAX_OBSTACULOS_MAGENTA; i++) {
-            obstaculosMagenta[i].active = 0;
-        }
-        for (int i = 0; i < MAX_OBSTACULOS_AMARELOS; i++) {
-            obstaculosAmarelos[i].active = 0;
-        }
+    const char *gameOverMessage[] = {
+        "╔═════════════════════════════════════════════════════════╗",
+        "║                                                         ║",
+        "║          A última centelha se apagou no vazio...        ║",
+        "║                                                         ║",
+        "║   'Mesmo nas trevas, a luz pode renascer.'              ║",
+        "║                                                         ║",
+        "║        Tente novamente, não desista.                    ║",
+        "║                                                         ║",
+        "╚═════════════════════════════════════════════════════════╝"
+    };
 
-        contadorObstaculos = 0;
-        velocidadeObstaculos = 20;    // Reinicia a velocidade de obstáculos para o valor da primeira fase
-        jogoPausado = 0;              // Retirar qualquer pausa
+    int messageLines = sizeof(gameOverMessage) / sizeof(gameOverMessage[0]);
+    int startY = (AREA_FIM_Y - AREA_INICIO_Y + 1 - messageLines) / 2 + AREA_INICIO_Y;
+    int screenWidth = AREA_FIM_X - AREA_INICIO_X + 1;
+    int messageWidth = strlen(gameOverMessage[0]);
+    int startX = (screenWidth - messageWidth) / 2 + AREA_INICIO_X;
 
-        // Reiniciar o menu principal após a morte
-        mostrarMenuPrincipal(pontuacoes);
-        screenUpdate();
+    for (int i = 0; i < messageLines; i++) {
+        screenGotoxy(startX, startY + i);
+        printf("%s", gameOverMessage[i]);
     }
+    
+    screenUpdate();
+    sleep(3);
 
+    // Chamar diretamente o menu principal após exibir "Game Over"
+    mostrarMenuPrincipal(pontuacoes);
+    screenUpdate();
+}
     void desenharBossFixo() {
-        screenSetColor(WHITE, BLACK);
+        screenSetColor(DARKGRAY, BLACK);
 
         int startX = (AREA_FIM_X + AREA_INICIO_X) / 2 - 16;
         int startY = AREA_INICIO_Y - 15;
@@ -740,41 +781,42 @@
     }
 
     void finalizarJogo(No *pontuacoes, int pontuacaoAtual) {
-        adicionarPontuacao(&pontuacoes, pontuacaoAtual);
-        salvarMaiorPontuacao(pontuacoes);
-        screenSetColor(RED, BLACK);
-        screenClear();
-        if (pontuacaoAtual >= PONTOS_FIM_JOGO) {
-            const char *vitoriaMessage[] = {
-                "*****************************************",
-                "*                                       *",
-                "*   O coração voltou a sentir plenamente!*",
-                "*                                       *",
-                "* 'As emoções foram recuperadas, e a    *",
-                "*  alma perdida encontrou seu caminho.' *",
-                "*                                       *",
-                "*     Obrigado por jogar!               *",
-                "*                                       *",
-                "*****************************************"
-            };
-            int messageLines = sizeof(vitoriaMessage) / sizeof(vitoriaMessage[0]);
-            int startY = (AREA_FIM_Y - AREA_INICIO_Y + 1 - messageLines) / 2 + AREA_INICIO_Y;
-            int screenWidth = AREA_FIM_X - AREA_INICIO_X + 1;
-            int messageWidth = strlen(vitoriaMessage[0]);
-            int startX = (screenWidth - messageWidth) / 2 + AREA_INICIO_X;
-            for (int i = 0; i < messageLines; i++) {
-                screenGotoxy(startX, startY + i);
-                printf("%s", vitoriaMessage[i]);
-            }
-            screenUpdate();
-            sleep(3);
-        } else {
-            morte(pontuacoes, pontuacaoAtual);
+    adicionarPontuacao(&pontuacoes, pontuacaoAtual);
+    salvarMaiorPontuacao(pontuacoes);
+    screenSetColor(RED, BLACK);
+    screenClear();
+    
+    if (pontuacaoAtual >= PONTOS_FIM_JOGO) {
+        const char *vitoriaMessage[] = {
+            "*****************************************",
+            "*                                       *",
+            "*   O coração voltou a sentir plenamente!*",
+            "*                                       *",
+            "* 'As emoções foram recuperadas, e a    *",
+            "*  alma perdida encontrou seu caminho.' *",
+            "*                                       *",
+            "*     Obrigado por jogar!               *",
+            "*                                       *",
+            "*****************************************"
+        };
+        int messageLines = sizeof(vitoriaMessage) / sizeof(vitoriaMessage[0]);
+        int startY = (AREA_FIM_Y - AREA_INICIO_Y + 1 - messageLines) / 2 + AREA_INICIO_Y;
+        int screenWidth = AREA_FIM_X - AREA_INICIO_X + 1;
+        int messageWidth = strlen(vitoriaMessage[0]);
+        int startX = (screenWidth - messageWidth) / 2 + AREA_INICIO_X;
+        
+        for (int i = 0; i < messageLines; i++) {
+            screenGotoxy(startX, startY + i);
+            printf("%s", vitoriaMessage[i]);
         }
-        mostrarMaiorPontuacao(pontuacoes); // Atualiza a maior pontuação imediatamente
-        screenUpdate(); // Atualiza a tela para refletir a mudança
-        mostrarMenuPrincipal(pontuacoes);
+        screenUpdate();
+        sleep(3);
+        mostrarMenuPrincipal(pontuacoes); // Após vitória, retorna ao menu
+    } else {
+        morte(pontuacoes, pontuacaoAtual); // Após morte, retorna ao menu direto
     }
+    screenUpdate();
+}
 
     int main() {
         No *pontuacoes = NULL;
