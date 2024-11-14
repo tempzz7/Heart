@@ -13,8 +13,8 @@
     #define AREA_FIM_X 70
     #define AREA_INICIO_Y 15
     #define AREA_FIM_Y 25
-    #define PONTOS_FASE2 200
-    #define PONTOS_FASE3 400
+    #define PONTOS_FASE2 2000
+    #define PONTOS_FASE3 4000
     #define PONTOS_FIM_JOGO 6000
 
     int menuOpcao = 0;
@@ -281,6 +281,23 @@ void mostrarMenuPrincipal(No *pontuacoes) {
         screenGotoxy(30, 11);
         printf("⠀⠀⠀⠀⠀ ⠀ ⠈⠙⢿⡿⠀⡿⠛⠁⠀⠀⠀⠀⠀⠀⠀");
     }
+
+// Função para exibir as instruções do jogo
+    void mostrarInstrucoes() {
+        printf("\n\nInstruções do Jogo\n\n");
+        printf("Movimento: Utilize as teclas a seguir para controlar seu personagem:\n\n");
+        printf("W - Move para cima\n");
+        printf("S - Move para baixo\n");
+        printf("A - Move para a esquerda\n");
+        printf("D - Move para a direita\n\n");
+        printf("Objetivo:\n\n");
+        printf("Desviar das estruturas brancas a todo custo, pois entrar em contato com elas, o coração levará dano.\n");
+        printf("Estruturas roxas podem ser atravessadas, mas somente se você permanecer imóvel ao passar por elas.\n");
+        printf("Boa sorte e divirta-se ao enfrentar esses desafios!\n\n");
+        printf("Pressione qualquer tecla para iniciar o jogo...\n");
+        getchar(); // Aguarda o jogador pressionar uma tecla
+    }
+
 
     void desenharPersonagemASCII() {
         screenSetColor(WHITE, DARKGRAY);
@@ -881,6 +898,7 @@ int main() {
         if (keyhit()) {
             ch = readch();
             if (ch == '1') {
+                mostrarInstrucoes();
                 Mix_Music *bgMusic = Mix_LoadMUS("background_music.mp3");
                 if (!bgMusic) {
                     fprintf(stderr, "Erro ao carregar música: %s\n", Mix_GetError());
