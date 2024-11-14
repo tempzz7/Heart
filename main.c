@@ -13,9 +13,9 @@
     #define AREA_FIM_X 70
     #define AREA_INICIO_Y 15
     #define AREA_FIM_Y 25
-    #define PONTOS_FASE2 2000
-    #define PONTOS_FASE3 4000
-    #define PONTOS_FIM_JOGO 6000
+    #define PONTOS_FASE2 200
+    #define PONTOS_FASE3 400
+    #define PONTOS_FIM_JOGO 600
 
     int menuOpcao = 0;
     int jogoEmExecucao = 1;
@@ -75,6 +75,7 @@
     void desenharOssos();
     void atualizarOssos();
     void iniciarJogo(Mix_Music *bgMusic, No *pontuacoes);
+    void salvarPontuacao(char *nome, int pontuacao);
     void finalizarJogo(No *pontuacoes, int pontuacaoAtual);
     void morte(No *pontuacoes, int pontuacaoAtual);
     void moverCoracao(int upPressed, int downPressed, int leftPressed, int rightPressed);
@@ -634,6 +635,7 @@ void mostrarMenuPrincipal(No *pontuacoes) {
         finalizarJogo(pontuacoes, score);
     }
 
+
 void morte(No *pontuacoes, int pontuacaoAtual) {
     adicionarPontuacao(&pontuacoes, pontuacaoAtual);
     salvarMaiorPontuacao(pontuacoes);
@@ -667,12 +669,59 @@ void morte(No *pontuacoes, int pontuacaoAtual) {
     }
     
     screenUpdate();
-    sleep(3);
-
-    // Chamar diretamente o menu principal após exibir "Game Over"
-    mostrarMenuPrincipal(pontuacoes);
+    sleep(3); // Pausa de 3 segundos para exibir a mensagem de "Game Over"
+    
+    // Limpa a tela antes de solicitar o nome do jogador
+    screenClear();
     screenUpdate();
+
+        // Centraliza e exibe a mensagem de solicitação do nome
+    const char *nomePrompt = "Digite seu nome para salvar a pontuação: ";
+    int nomePromptLength = strlen(nomePrompt);
+    int nomeStartX = (screenWidth - nomePromptLength) / 2 + AREA_INICIO_X;
+    int nomeStartY = startY;
+
+    screenGotoxy(nomeStartX, nomeStartY);
+    printf("%s", nomePrompt);
+    screenUpdate();
+
+        // Captura e exibe o nome caractere por caractere
+        char nome[50];
+        int i = 0;
+        int ch;
+        while (i < sizeof(nome) - 1) {
+            ch = getchar(); // Captura um caractere do terminal
+
+            if (ch == '\n') { // Enter para finalizar
+                break;
+            } else if (ch == 127 || ch == '\b') { // Backspace
+                if (i > 0) {
+                    i--;
+                    nome[i] = '\0';
+                    screenGotoxy(nomeStartX + nomePromptLength + i, nomeStartY);
+                    printf(" "); // Apaga o último caractere da tela
+                    screenGotoxy(nomeStartX + nomePromptLength + i, nomeStartY);
+                    screenUpdate();
+                }
+            } else if (ch >= 32 && ch <= 126) { // Caracteres imprimíveis
+                nome[i++] = ch;
+                nome[i] = '\0';
+                printf("%c", ch); // Exibe o caractere digitado
+                screenUpdate();
+            }
+        }
+        nome[i] = '\0'; // Termina a string
+
+        // Salva a pontuação e exibe uma confirmação única
+        salvarPontuacao(nome, pontuacaoAtual);
+        printf("\nPontuação salva com sucesso!\n");
+        screenUpdate();
+        // Exibe o menu principal apenas uma vez
+        mostrarMenuPrincipal(pontuacoes);
+        screenUpdate();
+
 }
+
     void desenharBossFixo() {
         screenSetColor(DARKGRAY, BLACK);
 
@@ -838,17 +887,32 @@ void morte(No *pontuacoes, int pontuacaoAtual) {
         }
     }
 
-    void finalizarJogo(No *pontuacoes, int pontuacaoAtual) {
+    void salvarPontuacao(char *nome, int pontuacao) {
+        FILE *arquivo = fopen("scoreleaders.txt", "a"); // Abre o arquivo em modo de adição
+        if (arquivo == NULL) {
+            printf("Erro ao abrir o arquivo de pontuações.\n");
+            return;
+        }
+
+        fprintf(arquivo, "Nome: %s | Pontuação: %d\n", nome, pontuacao); // Escreve o nome e a pontuação
+        fclose(arquivo);
+    }
+
+
+void finalizarJogo(No *pontuacoes, int pontuacaoAtual) {
+    // Adiciona pontuação e salva o maior valor
     adicionarPontuacao(&pontuacoes, pontuacaoAtual);
     salvarMaiorPontuacao(pontuacoes);
+
+    // Define cor e limpa a tela
     screenSetColor(RED, BLACK);
     screenClear();
-    
-    if (pontuacaoAtual >= PONTOS_FIM_JOGO) {
+
+    if (pontuacaoAtual >= PONTOS_FIM_JOGO) { // Caso de vitória
         const char *vitoriaMessage[] = {
             "*****************************************",
             "*                                       *",
-            "*   O coração voltou a sentir plenamente!*",
+            "*  O coração voltou a sentir plenamente!*",
             "*                                       *",
             "* 'As emoções foram recuperadas, e a    *",
             "*  alma perdida encontrou seu caminho.' *",
@@ -862,19 +926,68 @@ void morte(No *pontuacoes, int pontuacaoAtual) {
         int screenWidth = AREA_FIM_X - AREA_INICIO_X + 1;
         int messageWidth = strlen(vitoriaMessage[0]);
         int startX = (screenWidth - messageWidth) / 2 + AREA_INICIO_X;
-        
+
         for (int i = 0; i < messageLines; i++) {
             screenGotoxy(startX, startY + i);
             printf("%s", vitoriaMessage[i]);
         }
         screenUpdate();
-        sleep(5);
-        mostrarMenuPrincipal(pontuacoes); // Após vitória, retorna ao menu
-    } else {
-        morte(pontuacoes, pontuacaoAtual); // Após morte, retorna ao menu direto
+        sleep(5); // Pausa de 5 segundos para exibir a mensagem de vitória
+
+        // Limpa a tela antes de solicitar o nome do jogador
+        screenClear();
+        screenUpdate();
+
+        // Centraliza e exibe a mensagem de solicitação do nome
+        const char *nomePrompt = "Digite seu nome para salvar a pontuação: ";
+        int nomePromptLength = strlen(nomePrompt);
+        int nomeStartX = (screenWidth - nomePromptLength) / 2 + AREA_INICIO_X;
+        int nomeStartY = startY;
+
+        screenGotoxy(nomeStartX, nomeStartY);
+        printf("%s", nomePrompt);
+        screenUpdate();
+
+        // Captura e exibe o nome caractere por caractere
+        char nome[50];
+        int i = 0;
+        int ch;
+        while (i < sizeof(nome) - 1) {
+            ch = getchar(); // Captura um caractere do terminal
+
+            if (ch == '\n') { // Enter para finalizar
+                break;
+            } else if (ch == 127 || ch == '\b') { // Backspace
+                if (i > 0) {
+                    i--;
+                    nome[i] = '\0';
+                    screenGotoxy(nomeStartX + nomePromptLength + i, nomeStartY);
+                    printf(" "); // Apaga o último caractere da tela
+                    screenGotoxy(nomeStartX + nomePromptLength + i, nomeStartY);
+                    screenUpdate();
+                }
+            } else if (ch >= 32 && ch <= 126) { // Caracteres imprimíveis
+                nome[i++] = ch;
+                nome[i] = '\0';
+                printf("%c", ch); // Exibe o caractere digitado
+                screenUpdate();
+            }
+        }
+        nome[i] = '\0'; // Termina a string
+
+        // Salva a pontuação e exibe uma confirmação única
+        salvarPontuacao(nome, pontuacaoAtual);
+        printf("\nPontuação salva com sucesso!\n");
+        screenUpdate();
+        // Exibe o menu principal apenas uma vez
+        mostrarMenuPrincipal(pontuacoes);
+        screenUpdate();
+
+    } else { // Caso de derrota, chama a função 'morte' apenas uma vez
+        morte(pontuacoes, pontuacaoAtual);
     }
-    screenUpdate();
 }
+
 
 int main() {
     No *pontuacoes = NULL;
