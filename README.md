@@ -20,5 +20,5 @@ No terminal Linux, digite:
 
 - **Movimentação**: Utilize **W, A, S, D** para mover o coração.
 - **Obstáculos**:
-  - Obstáculos **azuis**: Fique imóvel para evitá-los.
+  - Obstáculos **roxos**: Fique imóvel para evitá-los.
   - Obstáculos **brancos**: Desvie rapidamente!
